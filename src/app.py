@@ -52,13 +52,19 @@ def retrieve_files():
         return jsonify({"error": "No file paths provided"}), 400
 
     file_contents = {}
+    all_missing = True
+
     for file_path in file_paths:
         full_path = os.path.join(PROJECT_PATH, file_path)
         try:
             with open(full_path, 'r') as file:
                 file_contents[file_path] = file.read()
+                all_missing = False  # At least one file exists
         except Exception as e:
             file_contents[file_path] = f"Error reading file: {str(e)}"
+
+    if all_missing:
+        return jsonify({"error": "All requested files are missing"}), 404
 
     return jsonify(file_contents)
 
