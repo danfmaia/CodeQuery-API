@@ -3,5 +3,3 @@
 *.py[cod]
 
 venv/
-.env/
-.env

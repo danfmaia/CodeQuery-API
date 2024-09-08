@@ -6,6 +6,7 @@ venv/
 .benchmarks/
 .pytest_cache/
 .git/
+assets/
 
 # Ignore files
 .env

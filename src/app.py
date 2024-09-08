@@ -1,8 +1,13 @@
 import os
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 
-PROJECT_PATH = "./"
-AGENTIGNORE_FILE = ".agentignore"
+# Load environment variables from .env file
+load_dotenv()
+
+# Get project configuration from environment variables
+PROJECT_PATH = os.getenv('PROJECT_PATH', './')
+AGENTIGNORE_FILE = os.getenv('AGENTIGNORE_FILE', '.agentignore')
 
 app = Flask(__name__)
 

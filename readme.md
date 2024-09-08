@@ -1,8 +1,8 @@
 # AutocoderGPT API
 
-**AutocoderGPT API** is a Flask-based API specifically designed to serve the **AutocoderGPT** agent, a custom agent available in the GPT Store. This API allows AI agents, like **AutocoderGPT**, to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
+**AutocoderGPT API** is a Flask-based API specifically designed to serve the [AutocoderGPT agent](https://chatgpt.com/g/g-p6iZtgfWt-autocodergpt), a custom agent available in the GPT Store. This API allows this or similar agents to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
 
-**Curious Fact**: During its development, the **AutocoderGPT API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
+🤖 **Curious Fact**: During its development, the **AutocoderGPT API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
 ---
 
@@ -48,14 +48,14 @@
 - **Request Body**:
   ```json
   {
-    "file_paths": ["src/app.py", "tests/test_app.py"]
+    "file_paths": ["app.py", "tests/test_app.py"]
   }
   ```
 - **Response Example**:
 
   ```json
   {
-    "src/app.py": {
+    "app.py": {
       "content": "# Content of app.py file..."
     },
     "tests/test_app.py": {
@@ -88,12 +88,18 @@ venv/
 .benchmarks/
 .pytest_cache/
 .git/
+assets/
 
 # Ignore files
 .env
 .gitignore
 pytest.ini
 requirements.txt
+github.webp
+
+# Ignore specific files or directories in the source and tests
+src/__pycache__/
+tests/__pycache__/
 ```
 
 ---
@@ -123,7 +129,7 @@ requirements.txt
 3. Run the Flask application:
 
    ```bash
-   python src/app.py
+   python app.py
    ```
 
 4. The API will be available at `http://localhost:5001`.
