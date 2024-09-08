@@ -88,7 +88,7 @@ def get_file_structure():
 
 
 @app.route('/files/content', methods=['POST'])
-def retrieve_files():
+def get_file_content():
     """
     Retrieves content of specified files for AI processing.
 
