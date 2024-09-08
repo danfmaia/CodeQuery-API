@@ -36,9 +36,9 @@ def test_load_agentignore():
             # Call the function to load the mocked .agentignore
             load_agentignore()
 
-            # Ensure that the file was opened correctly, with 'encoding=utf-8'
+            # Ensure that the file was opened correctly
             mock_file.assert_called_once_with(
-                os.path.join(PROJECT_PATH, AGENTIGNORE_FILE), 'r', encoding='utf-8')
+                AGENTIGNORE_FILE, 'r', encoding='utf-8')
 
     # Check that app_config.ignored_patterns has been loaded correctly
     assert app_config.ignored_patterns == [

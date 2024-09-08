@@ -30,9 +30,9 @@ app_config = AppConfig()  # Instance to store ignored patterns
 
 def load_agentignore():
     """Loads the .agentignore file and stores the ignored patterns."""
-    ignore_path = os.path.join(PROJECT_PATH, AGENTIGNORE_FILE)
+    ignore_path = AGENTIGNORE_FILE
     if os.path.exists(ignore_path):
-        with open(ignore_path, 'r', encoding='utf-8') as f:  # Specify encoding here
+        with open(ignore_path, 'r', encoding='utf-8') as f:
             app_config.ignored_patterns = [
                 line.strip() for line in f.readlines() if line.strip() and not line.strip().startswith('#')
             ]
