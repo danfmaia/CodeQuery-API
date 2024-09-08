@@ -1,6 +1,6 @@
 # Codebase Query API
 
-**Codebase Query API** is a Flask-based API specifically designed to serve AI assistants specialized in coding tasks. This API allows AI assistants to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
+**Codebase Query API** is a lightweight and efficient Flask-based API designed to assist AI-powered tools in navigating and interacting with codebases. With this API, AI assistants can programmatically query project file structures and retrieve file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
 
 🤖 **Curious Fact**: During its development, the **Codebase Query API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
