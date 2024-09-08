@@ -1,6 +1,6 @@
 # Privacy Policy for AutocoderGPT
 
-Effective Date: [Insert Date]
+Effective Date: September 8, 2024
 
 ## Introduction
 
@@ -29,7 +29,7 @@ Since no data is stored or logged, there is no data available to share with thir
 
 ## Security
 
-Although the API doesn't store data, reasonable security measures are in place to ensure the integrity and security of the system while it processes requests.
+The API is designed for local development environments and temporary use with tools like **ngrok**. Since it's intended for controlled and short-term exposure, no advanced security features are built-in. If you plan to expose the API for longer periods or in less controlled environments, consider adding minimal security measures like API keys or basic authentication to restrict access.
 
 ## Changes to This Policy
 
@@ -37,4 +37,4 @@ This Privacy Policy may be updated periodically. Changes will be posted here wit
 
 ## Contact
 
-For any questions or concerns regarding this Privacy Policy, please reach out at [Insert Contact Information].
+If you have any questions or concerns regarding this Privacy Policy, please create an issue on the GitHub repository: https://github.com/yourusername/autocoder-gpt-api/issues.

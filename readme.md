@@ -147,6 +147,12 @@ The tests cover:
 
 ---
 
+## Privacy
+
+For information on how data is handled by **AutocoderGPT**, please refer to the [Privacy Policy](privacy.md). The policy explains what data is processed, how it's used, and the lack of data retention within the API.
+
+---
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
