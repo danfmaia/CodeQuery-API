@@ -1,8 +1,8 @@
-# AutocoderGPT API
+# Codebase Query API
 
-**AutocoderGPT API** is a Flask-based API specifically designed to serve a **custom GPT agent** specialized in coding tasks. This API allows AI agents to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
+**Codebase Query API** is a Flask-based API specifically designed to serve custom AI agents. This API allows AI agents to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
 
-🤖 **Curious Fact**: During its development, the **AutocoderGPT API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
+🤖 **Curious Fact**: During its development, the **Codebase Query API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
 ## Features
 
@@ -97,10 +97,10 @@ tests/__pycache__/
 
 ## Environment Variables
 
-You can and should customize the **AutocoderGPT API** using environment variables defined in a `.env` file.
+You can and should customize the **Codebase Query API** using environment variables defined in a `.env` file.
 
 - **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
-- **`AGENTIGNORE_FILE`**: Change this if you want another to determine which files are to be ignored by the agent (for the `/files/structure` endpoint), such as `.gitgnore`. Note that those files can still be accessed by the `/files/content/` endpoint.
+- **`AGENTIGNORE_FILE`**: Change this if you want another file to determine which files are to be ignored by the agent (for the `/files/structure` endpoint), such as `.gitignore`. Note that those files can still be accessed by the `/files/content/` endpoint.
 
 Example `.env` file:
 
@@ -121,8 +121,8 @@ AGENTIGNORE_FILE=.agentignore
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/autocoder-gpt-api.git
-   cd autocoder-gpt-api
+   git clone https://github.com/your-username/codebase-query-api.git
+   cd codebase-query-api
    ```
 
 2. Install dependencies:
@@ -150,11 +150,11 @@ This API was designed to be used by custom AI agents. If you are a ChatGPT Premi
 3. Send the following prompt to the GPT Builder to create your custom GPT:
 
    ```
-   Name: AutocoderGPT
+   Name: CodebaseGPT
 
    Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project files.
 
-   Instructions: You are 'AutocoderGPT,' an AI specialized in actively assisting with software development tasks by retrieving relevant project files, answering questions, generating insights, and providing direct coding support based on the provided codebase. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes retrieving the structure of the codebase to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
+   Instructions: You are 'CodebaseGPT,' an AI specialized in actively assisting with software development tasks by retrieving relevant project files, answering questions, generating insights, and providing direct coding support based on the provided codebase. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes retrieving the structure of the codebase to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
 
    Conversation Starters:
    - Analyze the current codebase in a general way.
