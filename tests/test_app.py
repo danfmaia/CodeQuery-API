@@ -2,7 +2,7 @@ import os
 from unittest.mock import mock_open, patch
 import json
 import pytest
-from src.app import app, load_agentignore, app_config
+from app import app, load_agentignore, app_config
 
 PROJECT_PATH = "./"
 AGENTIGNORE_FILE = ".agentignore"
@@ -58,20 +58,20 @@ def test_retrieve_single_file(_client_):
     """Test the /files/content endpoint with a single file."""
     response = _client_.post(
         # Use a file that exists in your project
-        '/files/content', json={"file_paths": ["src/app.py"]})
+        '/files/content', json={"file_paths": ["app.py"]})
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert "src/app.py" in data
+    assert "app.py" in data
 
 
 def test_retrieve_multiple_files(_client_):
     """Test the /files/content endpoint with multiple files."""
     response = _client_.post(
         # Use files that exist in your project
-        '/files/content', json={"file_paths": ["src/app.py", "tests/test_src/app.py"]})
+        '/files/content', json={"file_paths": ["app.py", "tests/test_src/app.py"]})
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert "src/app.py" in data
+    assert "app.py" in data
     assert "tests/test_src/app.py" in data
 
 

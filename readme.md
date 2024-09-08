@@ -27,7 +27,7 @@
     },
     "src": {
       "directories": [],
-      "files": ["src/app.py"]
+      "files": ["app.py"]
     },
     "tests": {
       "directories": [],
@@ -44,15 +44,15 @@
 - **Request Body**:
   ```json
   {
-    "file_paths": ["src/app.py", "tests/test_app.py"]
+    "file_paths": ["app.py", "tests/test_app.py"]
   }
   ```
 - **Response Example**:
 
   ```json
   {
-    "src/app.py": {
-      "content": "# Content of src/app.py file..."
+    "app.py": {
+      "content": "# Content of app.py file..."
     },
     "tests/test_app.py": {
       "content": "# Content of test_app.py file..."
@@ -134,7 +134,7 @@ AGENTIGNORE_FILE=.agentignore
 3. Run the Flask application:
 
    ```bash
-   python src/app.py
+   python app.py
    ```
 
 4. The API will be available at `http://localhost:5001`.
