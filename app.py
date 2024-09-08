@@ -7,6 +7,7 @@ load_dotenv()
 
 # Get project configuration from environment variables
 PROJECT_PATH = os.getenv('PROJECT_PATH', './')
+print(f"PROJECT_PATH: {PROJECT_PATH}")
 AGENTIGNORE_FILE = os.getenv('AGENTIGNORE_FILE', '.agentignore')
 
 app = Flask(__name__)

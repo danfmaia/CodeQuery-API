@@ -96,9 +96,9 @@ def test_ignored_files_in_structure(_client_):
     for folder in data:
         assert "venv" not in data[folder]['directories']
 
-    # Check that '__pycache__/' is ignored and not included
+    # Check that '.pytest_cache/' is ignored and not included
     for folder in data:
-        assert "src/__pycache__" not in data[folder]['directories']
+        assert ".pytest_cache/" not in data[folder]['directories']
 
     # Check that '.agentignore' is not ignored and is present in the root directory
     assert ".agentignore" in data["."]["files"]

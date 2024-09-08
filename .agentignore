@@ -1,19 +1,21 @@
-# Ignore Python cache and virtual environment directories
-__pycache__/
-venv/
-
-# Ignore directories
-.benchmarks/
-.pytest_cache/
+# General
 .git/
-assets/
-
-# Ignore files
-.env
 .gitignore
-pytest.ini
-requirements.txt
+.vscode/
+assets/
+public/
 
-# Ignore specific files or directories in the source and tests
+# Python
 src/__pycache__/
 tests/__pycache__/
+__pycache__/
+venv/
+.benchmarks/
+.pytest_cache/
+.env
+requirements.txt
+
+# JavaScript
+node_modules/
+package-lock.json
+package.json
