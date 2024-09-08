@@ -7,9 +7,9 @@
 ## Features
 
 - **Designed for AI Assistants**: This API was specifically designed to integrate with AI assistants such as custom GPTs, providing them with efficient access to project file structures and contents.
-- **Retrieve Project File Structure**: Get a detailed view of the project’s directories and files, excluding those specified in the `.agentignore` file.
+- **Retrieve Project Structure**: Get a detailed view of the project’s directories and files, excluding those specified in the `.agentignore` file.
 - **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent or ignored files.
-- **Custom Ignore Patterns**: Utilize `.agentignore` for specifying which files or directories to exclude from the structure or content retrieval.
+- **Custom Ignore Patterns**: Utilize `.agentignore` for specifying which files or directories to exclude from the structure retrieval.
 
 ## API Endpoints
 
@@ -69,30 +69,32 @@
 
 ## .agentignore File
 
-The `.agentignore` file works similarly to `.gitignore`, allowing you to specify files and directories that should be excluded from file structure and content queries.
+The `.agentignore` file works similarly to `.gitignore`, allowing you to specify files and directories that should be excluded from file structure queries (`/files/structure` endpoint).
 
 **Example**:
 
 ```plaintext
-# Ignore Python cache and virtual environment directories
-__pycache__/
-venv/
-
-# Ignore directories
-.benchmarks/
-.pytest_cache/
+# General
 .git/
-assets/
-
-# Ignore files
-.env
 .gitignore
-pytest.ini
-requirements.txt
+.vscode/
+assets/
+public/
 
-# Ignore specific files or directories in the source and tests
+# Python
 src/__pycache__/
 tests/__pycache__/
+__pycache__/
+venv/
+.benchmarks/
+.pytest_cache/
+.env
+requirements.txt
+
+# JavaScript
+node_modules/
+package-lock.json
+package.json
 ```
 
 ## Environment Variables
