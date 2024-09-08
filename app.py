@@ -19,21 +19,6 @@ app = Flask(__name__)
 logger = logging.getLogger('flask_app')
 logger.setLevel(logging.INFO)
 
-# Disable only Werkzeug's access logs, but keep server startup logs
-werkzeug_logger = logging.getLogger('werkzeug')
-werkzeug_logger.setLevel(logging.INFO)
-werkzeug_logger.propagate = False
-
-
-def access_log_filter(record):
-    "Suppress access logs specifically"
-    return not record.getMessage().startswith('127.0.0.1')
-
-
-# Apply the access log filter to Werkzeug's log handler
-for handler in werkzeug_logger.handlers:
-    handler.addFilter(access_log_filter)
-
 # Create a handler to log to the console
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
@@ -44,6 +29,23 @@ console_handler.setFormatter(formatter)
 
 # Add the handler to the logger
 logger.addHandler(console_handler)
+
+# Function to suppress only access logs
+
+
+def filter_access_logs(record):
+    """Suppress logs that contain GET or POST requests."""
+    return not ("GET /" in record.getMessage() or "POST /" in record.getMessage())
+
+
+# Apply the filter to Werkzeug's access logger
+access_logger = logging.getLogger('werkzeug')
+access_logger.setLevel(logging.INFO)
+
+# Get the Werkzeug access log handler and apply the filter
+access_handler = logging.StreamHandler()
+access_handler.addFilter(filter_access_logs)
+access_logger.addHandler(access_handler)
 
 ignored_patterns = []
 
