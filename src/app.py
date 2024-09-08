@@ -26,7 +26,7 @@ def load_agentignore():
     """Loads the .agentignore file and stores the ignored patterns."""
     ignore_path = os.path.join(PROJECT_PATH, AGENTIGNORE_FILE)
     if os.path.exists(ignore_path):
-        with open(ignore_path, 'r') as f:
+        with open(ignore_path, 'r', encoding='utf-8') as f:  # Specify encoding here
             app_config.ignored_patterns = [
                 line.strip() for line in f.readlines() if line.strip() and not line.strip().startswith('#')
             ]
@@ -115,10 +115,10 @@ def retrieve_files():
 
         # Try to read the file
         try:
-            with open(full_path, 'r') as file:
+            with open(full_path, 'r', encoding='utf-8') as file:
                 file_contents[file_path] = {"content": file.read()}
                 all_missing = False  # At least one file exists
-        except Exception as e:
+        except OSError as e:  # Catch specific file-related exceptions
             file_contents[file_path] = {
                 "error": f"Error reading file: {str(e)}"}
 

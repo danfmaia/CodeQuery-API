@@ -7,15 +7,13 @@ from src.app import app, load_agentignore, app_config
 PROJECT_PATH = "./"
 AGENTIGNORE_FILE = ".agentignore"
 
-# Fixture to provide the test client
-
 
 @pytest.fixture
-def client():
+def _client_():
     """Provides a test client for the Flask application."""
     app.config['TESTING'] = True
-    with app.test_client() as client_:
-        yield client_
+    with app.test_client() as client:
+        yield client
 
 
 def test_load_agentignore():
@@ -38,27 +36,27 @@ def test_load_agentignore():
             # Call the function to load the mocked .agentignore
             load_agentignore()
 
-            # Ensure that the file was opened correctly
+            # Ensure that the file was opened correctly, with 'encoding=utf-8'
             mock_file.assert_called_once_with(
-                os.path.join(PROJECT_PATH, AGENTIGNORE_FILE), 'r')
+                os.path.join(PROJECT_PATH, AGENTIGNORE_FILE), 'r', encoding='utf-8')
 
     # Check that app_config.ignored_patterns has been loaded correctly
     assert app_config.ignored_patterns == [
         'venv/', '__pycache__/', '.git/'], "Patterns were not loaded correctly"
 
 
-def test_filestructure(client):
+def test_filestructure(_client_):
     """Test the /files/structure endpoint."""
-    response = client.get('/files/structure')
+    response = _client_.get('/files/structure')
     assert response.status_code == 200
     data = json.loads(response.data)
     assert "directories" in data["."]
     assert "files" in data["."]
 
 
-def test_retrieve_single_file(client):
+def test_retrieve_single_file(_client_):
     """Test the /files/content endpoint with a single file."""
-    response = client.post(
+    response = _client_.post(
         # Use a file that exists in your project
         '/files/content', json={"file_paths": ["src/app.py"]})
     assert response.status_code == 200
@@ -66,9 +64,9 @@ def test_retrieve_single_file(client):
     assert "src/app.py" in data
 
 
-def test_retrieve_multiple_files(client):
+def test_retrieve_multiple_files(_client_):
     """Test the /files/content endpoint with multiple files."""
-    response = client.post(
+    response = _client_.post(
         # Use files that exist in your project
         '/files/content', json={"file_paths": ["src/app.py", "tests/test_app.py"]})
     assert response.status_code == 200
@@ -77,19 +75,19 @@ def test_retrieve_multiple_files(client):
     assert "tests/test_app.py" in data
 
 
-def test_retrieve_nonexistent_file(client):
+def test_retrieve_nonexistent_file(_client_):
     """Test the /files/content endpoint with a nonexistent file."""
-    response = client.post(
+    response = _client_.post(
         '/files/content', json={"file_paths": ["nonexistentfile.tsx"]})
     assert response.status_code == 404
     data = json.loads(response.data)
     assert "error" in data
 
 
-def test_ignored_files_in_structure(client):
+def test_ignored_files_in_structure(_client_):
     """Test that directories and files listed in .agentignore are ignored by /files/structure."""
     # Send a request to the /files/structure endpoint
-    response = client.get('/files/structure')
+    response = _client_.get('/files/structure')
 
     assert response.status_code == 200
     data = json.loads(response.data)
