@@ -1,6 +1,9 @@
 import os
+import logging
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from src.app_config import AppConfig
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,20 +15,55 @@ AGENTIGNORE_FILE = os.getenv('AGENTIGNORE_FILE', '.agentignore')
 
 app = Flask(__name__)
 
-# Store ignored paths
+# Custom logger setup
+logger = logging.getLogger('flask_app')
+logger.setLevel(logging.INFO)
+
+# Disable only Werkzeug's access logs, but keep server startup logs
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.INFO)
+werkzeug_logger.propagate = False
+
+
+def access_log_filter(record):
+    "Suppress access logs specifically"
+    return not record.getMessage().startswith('127.0.0.1')
+
+
+# Apply the access log filter to Werkzeug's log handler
+for handler in werkzeug_logger.handlers:
+    handler.addFilter(access_log_filter)
+
+# Create a handler to log to the console
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create a logging format
+formatter = logging.Formatter('%(asctime)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(console_handler)
+
 ignored_patterns = []
 
-# AppConfig class to store configuration
+
+app_config = AppConfig()
 
 
-class AppConfig:
-    """Class to store application configuration such as ignored patterns."""
+@app.before_request
+def log_request_info():
+    """Log request details before handling."""
+    if request.method == 'POST':
+        logger.info("Request Data: %s", request.get_json())
 
-    def __init__(self):
-        self.ignored_patterns = []
 
-
-app_config = AppConfig()  # Instance to store ignored patterns
+@app.after_request
+def log_response_info(response):
+    """Log response details."""
+    logger.info('%s - - [%s %s] %s', request.remote_addr,
+                request.method, request.path, response.status_code)
+    return response
 
 
 def load_agentignore():
@@ -48,12 +86,12 @@ def is_ignored(path):
         normalized_path = os.path.normpath(path).lstrip(os.sep)
 
         # Print statements for debugging
-        print(f"Checking path: {normalized_path}\
-              against pattern: {normalized_pattern}")
+        # print(f"Checking path: {normalized_path}\
+        #   against pattern: {normalized_pattern}")
 
         # Check if the path is ignored (matches the pattern exactly or starts with the pattern)
         if normalized_path == normalized_pattern or normalized_path.startswith(normalized_pattern):
-            print(f"Ignoring path: {normalized_path}")
+            # print(f"Ignoring path: {normalized_path}")
             return True
 
     return False
@@ -96,7 +134,11 @@ def get_file_structure():
 @app.route('/files/content', methods=['POST'])
 def get_file_content():
     """
-    Retrieves content of specified files for AI processing.
+    Retrieves content of specified files for AI processing. 
+
+    Parameters:
+        list(string):
+            file_paths: A list of file paths to retrieve. Each path should be a string.
 
     Returns:
         dict: JSON object with file content or error messages if files can't be accessed.
@@ -135,5 +177,5 @@ def get_file_content():
 
 
 if __name__ == '__main__':
-    load_agentignore()  # Load the .agentignore file on startup
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    load_agentignore()
+    app.run(host='0.0.0.0', port=5001)
