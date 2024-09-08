@@ -1,12 +1,12 @@
 # Codebase Query API
 
-**Codebase Query API** is a Flask-based API specifically designed to serve custom AI agents. This API allows AI agents to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
+**Codebase Query API** is a Flask-based API specifically designed to serve AI assistants specialized in coding tasks. This API allows AI assistants to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
 
 🤖 **Curious Fact**: During its development, the **Codebase Query API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
 ## Features
 
-- **Designed for Custom AI Agents**: This API was specifically designed to integrate with custom GPT agents or other AI agents, providing them with efficient access to project file structures and contents.
+- **Designed for AI Assistants**: This API was specifically designed to integrate with AI assistants such as custom GPTs, providing them with efficient access to project file structures and contents.
 - **Retrieve Project File Structure**: Get a detailed view of the project’s directories and files, excluding those specified in the `.agentignore` file.
 - **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent or ignored files.
 - **Custom Ignore Patterns**: Utilize `.agentignore` for specifying which files or directories to exclude from the structure or content retrieval.
@@ -100,7 +100,7 @@ tests/__pycache__/
 You can and should customize the **Codebase Query API** using environment variables defined in a `.env` file.
 
 - **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
-- **`AGENTIGNORE_FILE`**: Change this if you want another file to determine which files are to be ignored by the agent (for the `/files/structure` endpoint), such as `.gitignore`. Note that those files can still be accessed by the `/files/content/` endpoint.
+- **`AGENTIGNORE_FILE`**: Change this if you want another file (such as `.gitignore`) to determine which files are to be ignored for the `/files/structure` endpoint. Note that those files can still be accessed by the `/files/content/` endpoint.
 
 Example `.env` file:
 
@@ -141,7 +141,7 @@ AGENTIGNORE_FILE=.agentignore
 
 ## Creating your own custom GPT for using this API
 
-This API was designed to be used by custom AI agents. If you are a ChatGPT Premium user, you can create a custom GPT using the **ChatGPT Builder**.
+This API was designed to be used by custom AI assistants. If you are a ChatGPT Premium user, you can create a custom GPT using the **ChatGPT Builder**.
 
 ### Steps:
 
