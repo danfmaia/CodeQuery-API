@@ -1,0 +1,138 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Codebase Query API",
+    "description": "A Flask API to retrieve the file structure and contents of a project directory",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://4295-2804-14d-1685-924a-8002-c965-2b42-d97.ngrok-free.app"
+    }
+  ],
+  "paths": {
+    "/filestructure": {
+      "get": {
+        "summary": "Retrieve the file structure",
+        "description": "Returns the file structure of the project directory in a nested format, showing directories and files.",
+        "operationId": "getFileStructure",
+        "responses": {
+          "200": {
+            "description": "Successful response with the file structure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "directories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of directory names"
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of file names"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/retrievefiles": {
+      "post": {
+        "summary": "Retrieve file contents",
+        "description": "Accepts a list of file paths and returns their contents or an error message if the file does not exist.",
+        "operationId": "retrieveFiles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "A list of file paths to retrieve"
+                  }
+                },
+                "required": ["file_paths"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with file contents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "file_path": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the file"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message in case of failure"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error when no file paths are provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error when all requested files are missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
