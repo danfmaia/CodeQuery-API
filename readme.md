@@ -95,7 +95,6 @@ assets/
 .gitignore
 pytest.ini
 requirements.txt
-github.webp
 
 # Ignore specific files or directories in the source and tests
 src/__pycache__/
