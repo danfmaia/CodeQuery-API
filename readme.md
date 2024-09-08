@@ -31,7 +31,7 @@
     },
     "src": {
       "directories": [],
-      "files": ["app.py"]
+      "files": ["src/app.py"]
     },
     "tests": {
       "directories": [],
@@ -48,15 +48,15 @@
 - **Request Body**:
   ```json
   {
-    "file_paths": ["app.py", "tests/test_app.py"]
+    "file_paths": ["src/app.py", "tests/test_app.py"]
   }
   ```
 - **Response Example**:
 
   ```json
   {
-    "app.py": {
-      "content": "# Content of app.py file..."
+    "src/app.py": {
+      "content": "# Content of src/app.py file..."
     },
     "tests/test_app.py": {
       "content": "# Content of test_app.py file..."
@@ -103,6 +103,22 @@ tests/__pycache__/
 
 ---
 
+## Environment Variables
+
+You can and should customize the **AutocoderGPT API** using environment variables defined in a `.env` file.
+
+- **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
+- **`AGENTIGNORE_FILE`**: Change this if you want another file to behave as an `.agentignore` file, such as `.gitgnore`.
+
+Example `.env` file:
+
+```
+PROJECT_PATH=../your-project/
+AGENTIGNORE_FILE=.agentignore
+```
+
+---
+
 ## Installation
 
 ### Prerequisites
@@ -128,7 +144,7 @@ tests/__pycache__/
 3. Run the Flask application:
 
    ```bash
-   python app.py
+   python src/app.py
    ```
 
 4. The API will be available at `http://localhost:5001`.
@@ -149,6 +165,34 @@ The tests cover:
 - Retrieving the file structure
 - Retrieving the contents of specific files
 - Handling non-existent or ignored files
+
+---
+
+## Creating Your Own Custom GPT for AutocoderGPT
+
+If you'd like to use the AutocoderGPT API with your own custom GPT agent, you can create a custom GPT using the **ChatGPT Builder** (available with ChatGPT Premium).
+
+### Steps:
+
+1. Go to the [GPT Builder](https://chatgpt.com/gpts/editor/g-vKMjAxftT) in your ChatGPT Premium account.
+2. Access the **Create** tab.
+3. Send the following prompt to the GPT Builder to create your custom GPT:
+
+   ```
+   Name: AutocoderGPT
+
+   Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project files.
+
+   Instructions: You are 'AutocoderGPT,' an AI specialized in actively assisting with software development tasks by retrieving relevant project files, answering questions, generating insights, and providing direct coding support based on the provided codebase. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes retrieving the structure of the codebase to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
+
+   Conversation Starters (suggested):
+   - Analyze the current codebase in a general way.
+   - Help me investigate and debug an issue in the code.
+   - I need assistance in developing a new feature.
+   - Analyze the main files and help me refactor them for better performance.
+   ```
+
+4. Once you create the GPT with this prompt, you can use it to interact with the **AutocoderGPT API** and leverage its capabilities to assist with software development tasks like analyzing code, debugging issues, and developing new features.
 
 ---
 

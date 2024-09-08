@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://4295-2804-14d-1685-924a-8002-c965-2b42-d97.ngrok-free.app"
+      "url": "<YOUR-GENERATED-NGROK-URL>"
     }
   ],
   "paths": {
