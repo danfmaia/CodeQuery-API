@@ -1,6 +1,6 @@
 # AutocoderGPT API
 
-**AutocoderGPT API** is a Flask-based API specifically designed to serve the **AutocoderGPT** agent, a custom ChatGPT agent available in the ChatGPT marketplace. This API allows AI agents, like **AutocoderGPT**, to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
+**AutocoderGPT API** is a Flask-based API specifically designed to serve the **AutocoderGPT** agent, a custom agent available in the GPT Store. This API allows AI agents, like **AutocoderGPT**, to query a project's file structure and retrieve file contents programmatically. It is built to help developers explore and interact with a project's directory structure efficiently, while adhering to ignore patterns specified in `.agentignore`.
 
 **Curious Fact**: During its development, the **AutocoderGPT API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
