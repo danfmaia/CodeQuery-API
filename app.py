@@ -30,8 +30,6 @@ console_handler.setFormatter(formatter)
 # Add the handler to the logger
 logger.addHandler(console_handler)
 
-# Function to suppress only access logs
-
 
 def filter_access_logs(record):
     """Suppress logs that contain GET or POST requests."""

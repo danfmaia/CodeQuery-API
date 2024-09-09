@@ -1,8 +1,8 @@
 # Codebase Query API
 
-**Codebase Query API** is a lightweight and efficient Flask-based API designed to assist AI-powered tools in navigating and interacting with codebases. With this API, AI assistants can programmatically query project file structures and retrieve file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
+**Codebase Query API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortless query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
 
-🤖 **Curious Fact**: During its development, the **Codebase Query API** was an integral part of its own creation process, being used to query and analyze its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
+🤖 **Curious Fact**: During its development, the **Codebase Query API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
 ## Features
 
@@ -185,7 +185,7 @@ This API was designed to be used by custom AI assistants. If you are a ChatGPT P
        }
      ],
      "paths": {
-       "/filestructure": {
+       "/files/structure": {
          "get": {
            "summary": "Retrieve the file structure",
            "description": "Returns the file structure of the project directory in a nested format, showing directories and files.",
@@ -220,7 +220,7 @@ This API was designed to be used by custom AI assistants. If you are a ChatGPT P
            }
          }
        },
-       "/retrievefiles": {
+       "/files/content": {
          "post": {
            "summary": "Retrieve file contents",
            "description": "Accepts a list of file paths and returns their contents or an error message if the file does not exist.",
