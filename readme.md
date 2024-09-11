@@ -2,7 +2,7 @@
 
 ![CodeQueryGPT cover artwork](./assets/social_CodeQueryGPT.png)
 
-**CodeQuery API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortless query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
+**CodeQuery API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
 
 🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
@@ -10,7 +10,7 @@
 
 - **Designed for AI Assistants**: This API was specifically designed to integrate with AI assistants such as custom GPTs, providing them with efficient access to project file structures and contents.
 - **Retrieve Project Structure**: Get a detailed view of the project’s directories and files, excluding those specified in the `.agentignore` file.
-- **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent or ignored files.
+- **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent paths.
 - **Custom Ignore Patterns**: Utilize `.agentignore` for specifying which files or directories to exclude from the structure retrieval.
 
 ## API Endpoints
