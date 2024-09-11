@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Codebase Query API",
+    "title": "CodeQuery API",
     "description": "A Flask API to retrieve the file structure and contents of a project directory",
     "version": "1.0.0"
   },

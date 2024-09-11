@@ -1,8 +1,8 @@
-# Codebase Query API
+# CodeQuery API
 
-**Codebase Query API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortless query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
+**CodeQuery API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortless query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
 
-🤖 **Curious Fact**: During its development, the **Codebase Query API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
+🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
 ## Features
 
@@ -99,7 +99,7 @@ package.json
 
 ## Environment Variables
 
-You can and should customize the **Codebase Query API** using environment variables defined in a `.env` file.
+You can and should customize the **CodeQuery API** using environment variables defined in a `.env` file.
 
 - **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
 - **`AGENTIGNORE_FILE`**: Change this if you want another file (such as `.gitignore`) to determine which files are to be ignored for the `/files/structure` endpoint. Note that those files can still be accessed by the `/files/content/` endpoint.
@@ -111,20 +111,20 @@ PROJECT_PATH=../your-project/
 AGENTIGNORE_FILE=.agentignore
 ```
 
-## Installation
+## Installation and Setup
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.8+ (3.12 recommended)
 - Flask
 
-### Setup
+### Steps
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/codebase-query-api.git
-   cd codebase-query-api
+   git clone https://github.com/your-username/CodeQuery-API.git
+   cd CodeQuery-API
    ```
 
 2. Install dependencies:
@@ -133,10 +133,10 @@ AGENTIGNORE_FILE=.agentignore
    pip install -r requirements.txt
    ```
 
-3. Run the Flask application:
+3. Activate local environment && Run the Flask application:
 
    ```bash
-   python app.py
+   conda activate venv/ && python app.py
    ```
 
 4. The API will be available at `http://localhost:5001`.
@@ -152,14 +152,14 @@ This API was designed to be used by custom AI assistants. If you are a ChatGPT P
 3. Send the following prompt to the GPT Builder to create your custom GPT:
 
    ```
-   Name: CodebaseGPT
+   Name: CodeQueryGPT
 
    Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project files.
 
-   Instructions: You are 'CodebaseGPT,' an AI specialized in actively assisting with software development tasks by retrieving relevant project files, answering questions, generating insights, and providing direct coding support based on the provided codebase. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes retrieving the structure of the codebase to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
+   Instructions: You are CodeQueryGPT, an AI specialized in actively assisting with software development tasks by querying project files, analyzing code structure, answering questions, and providing direct coding support. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes querying the structure of the project to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
 
    Conversation Starters:
-   - Analyze the current codebase in a general way.
+   - Analyse the current project structure and main files.
    - Help me investigate and debug an issue in the code.
    - I need assistance in developing a new feature.
    - Analyze the main files and help me refactor them for better performance.
@@ -175,7 +175,7 @@ This API was designed to be used by custom AI assistants. If you are a ChatGPT P
    {
      "openapi": "3.1.0",
      "info": {
-       "title": "Codebase Query API",
+       "title": "CodeQuery API",
        "description": "A Flask API to retrieve the file structure and contents of a project directory",
        "version": "1.0.0"
      },
