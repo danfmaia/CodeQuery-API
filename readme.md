@@ -1,6 +1,6 @@
 # CodeQuery API
 
-![CodeQueryGPT cover artwork](./assets/social_CodeQueryGPT.png)
+![CodeQueryGPT cover artwork](./assets/social_CodeQueryAPI.png)
 
 **CodeQuery API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
 
