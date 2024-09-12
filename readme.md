@@ -2,7 +2,9 @@
 
 ![CodeQueryGPT cover artwork](./assets/social_CodeQueryAPI.png)
 
-**CodeQuery API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, smart agents can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are retrieved, making it an invaluable tool for AI-driven code analysis and development.
+**CodeQuery API** is a lightweight and efficient Flask-based tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, agents\* can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are probed, making it an invaluable tool for AI-driven code analysis and development.
+
+\* The decision-making component of AI assistants.
 
 🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
@@ -156,7 +158,7 @@ This API was designed to be used by custom AI assistants. If you are a ChatGPT P
    ```
    Name: CodeQueryGPT
 
-   Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project files.
+   Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project structure and files.
 
    Instructions: You are CodeQueryGPT, an AI specialized in actively assisting with software development tasks by querying project files, analyzing code structure, answering questions, and providing direct coding support. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes querying the structure of the project to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
 
