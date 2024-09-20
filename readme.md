@@ -134,6 +134,7 @@ AGENTIGNORE_FILE=.agentignore
 2. Install dependencies:
 
    ```bash
+   sudo apt-get install jq
    pip install -r requirements.txt
    ```
 

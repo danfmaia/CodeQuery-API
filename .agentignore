@@ -13,9 +13,9 @@ venv/
 .benchmarks/
 .pytest_cache/
 .env
-requirements.txt
+# requirements.txt
 
 # JavaScript
 node_modules/
 package-lock.json
-package.json
+# package.json
