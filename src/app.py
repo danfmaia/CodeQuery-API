@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from src.app_config import AppConfig
+from app_config import AppConfig
 
 
 # Load environment variables from .env file
@@ -67,7 +67,11 @@ def log_response_info(response):
 
 
 def load_agentignore():
-    """Loads the .agentignore file and stores the ignored patterns."""
+    """
+    Loads the .agentignore file and stores the ignored patterns.
+
+    TODO: Improve logic to consider other git ignored—used patterns, such as `**/folder/`.
+    """
     ignore_path = AGENTIGNORE_FILE
     if os.path.exists(ignore_path):
         with open(ignore_path, 'r', encoding='utf-8') as f:

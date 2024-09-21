@@ -1,6 +1,6 @@
 # General
 .git/
-.gitignore
+# .gitignore
 .vscode/
 assets/
 public/
@@ -19,3 +19,10 @@ venv/
 node_modules/
 package-lock.json
 # package.json
+
+# TODO: Improve ignore logic to consider other git ignored—used patterns, such as `**/folder/`.
+gateway/venv/
+gateway/.terraform/
+gateway/*.tfstate
+gateway/*.tfstate.*
+gateway/terraform.tfvars

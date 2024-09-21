@@ -6,3 +6,22 @@ venv/
 .env
 
 logs/
+
+#
+# Gateway
+#
+
+gateway/commands.md
+
+# Terraform
+*/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+
+# Temporary (until agent ignore logic is improved)
+gateway/venv/
+gateway/.terraform/
+gateway/*.tfstate
+gateway/*.tfstate.*
+gateway/terraform.tfvars

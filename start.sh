@@ -20,7 +20,7 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 # Step 1: Activate the virtual environment and start Flask app
 source ~/miniconda3/bin/activate venv/
 mkdir -p logs  # Ensure the logs directory exists
-nohup python app.py > "logs/nohup_start_flask_${TIMESTAMP}.out" 2>&1 &  # Run Flask app in the background
+nohup python src/app.py > "logs/nohup_start_flask_${TIMESTAMP}.out" 2>&1 &  # Run Flask app in the background
 FLASK_PID=$!  # Store Flask app's PID
 echo "Flask app started with PID: $FLASK_PID."
 
