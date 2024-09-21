@@ -1,10 +1,10 @@
 **/__pycache__/
-
 *.py[cod]
-
 venv/
 .env
+*egg-info
 
+secrets/
 logs/
 
 #
@@ -14,14 +14,7 @@ logs/
 gateway/commands.md
 
 # Terraform
-*/.terraform/
+.terraform/
 *.tfstate
 *.tfstate.*
 terraform.tfvars
-
-# Temporary (until agent ignore logic is improved)
-gateway/venv/
-gateway/.terraform/
-gateway/*.tfstate
-gateway/*.tfstate.*
-gateway/terraform.tfvars

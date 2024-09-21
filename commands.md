@@ -1,9 +1,56 @@
-## Commands
+# Commands
+
+<!-- TODO: Rewrite history to purge sensitive data in this file. -->
+
+## Core
+
+cd /home/danfmaia/\_repos/CodeQuery-API && source .env
+
+### Check process statuses
+
+lsof -i :5001 && ps aux | grep ngrok
 
 ### Testing
 
+source .env && curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
+
+## Gateway
+
+cd /home/danfmaia/\_repos/CodeQuery-API/gateway && source .env
+
 source .env
 
-curl -H "X-API-KEY: $API_KEY" http://ec2-15-228-252-158.sa-east-1.compute.amazonaws.com:8080/files/structure
+### Terraform
 
-curl -H "X-API-KEY: O8i5EVRqYI+0OGjPgoXI5Ey2CQzfJ+uIyI7e7yn8j0A=" https://codequery.dev/files/structure
+terraform init
+
+terraform plan
+
+terraform apply
+
+### Gateway Management
+
+ssh -i $KEY_PATH $EC2_USER@$EC2_HOST
+
+**Upload files:**
+
+scp -i $KEY_PATH .env gateway.py requirements.txt $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
+scp -i $KEY_PATH .env $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
+
+**Restart server:**
+
+ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi"
+
+[Remote] sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi
+
+**Check server status:**
+
+ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl status fastapi"
+
+[Remote] sudo systemctl status fastapi
+
+[Remote] sudo journalctl -u fastapi.service -n 50
+
+**Inspect FastAPI service spec:**
+
+[Remote] sudo nano /etc/systemd/system/fastapi.service

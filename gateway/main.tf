@@ -49,15 +49,15 @@ resource "aws_instance" "codequery_gateway" {
             sudo yum install -y python3-pip
           
             # Check if virtualenv exists; if not, create it
-            if [ ! -d "/home/ec2-user/codequery-gateway/venv" ]; then
-                python3 -m venv /home/ec2-user/codequery-gateway/venv
+            if [ ! -d "/home/ec2-user/gateway/venv" ]; then
+                python3 -m venv /home/ec2-user/gateway/venv
             fi
             
-            source /home/ec2-user/codequery-gateway/venv/bin/activate
+            source /home/ec2-user/gateway/venv/bin/activate
             
             # Install dependencies from requirements.txt inside the virtual environment
-            if [ -f /home/ec2-user/codequery-gateway/requirements.txt ]; then
-                pip install -r /home/ec2-user/codequery-gateway/requirements.txt
+            if [ -f /home/ec2-user/gateway/requirements.txt ]; then
+                pip install -r /home/ec2-user/gateway/requirements.txt
             else
                 echo "requirements.txt not found"
                 exit 1
@@ -70,7 +70,7 @@ resource "aws_instance" "codequery_gateway" {
             After=network.target
 
             [Service]
-            ExecStart=/bin/bash -c 'source /home/ec2-user/codequery-gateway/venv/bin/activate && exec uvicorn app:app --host 0.0.0.0 --port 8080'
+            ExecStart=/bin/bash -c 'source /home/ec2-user/gateway/venv/bin/activate && exec uvicorn gateway:app --host 0.0.0.0 --port 8080'
             Restart=always
 
             [Install]
@@ -88,7 +88,7 @@ resource "aws_instance" "codequery_gateway" {
 
   # Define the instance tags
   tags = {
-    Name = "CodeQuery-Gateway"
+    Name = "gateway"
   }
 }
 
@@ -133,7 +133,7 @@ resource "aws_security_group" "allow_ssh_http_https" {
 }
 
 resource "aws_lb" "app_lb" {
-  name               = "codequery-gateway-lb"
+  name               = "gateway-lb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.allow_ssh_http_https.id]
@@ -141,7 +141,7 @@ resource "aws_lb" "app_lb" {
 }
 
 resource "aws_lb_target_group" "app_tg" {
-  name     = "codequery-gateway-tg"
+  name     = "gateway-tg"
   port     = 8080
   protocol = "HTTP"
   vpc_id   = var.vpc_id  # Load from environment
