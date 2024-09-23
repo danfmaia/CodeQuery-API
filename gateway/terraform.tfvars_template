@@ -1,0 +1,9 @@
+aws_region             = "replace"
+ami_id                 = "replace"
+certificate_arn        = "replace"
+key_name               = "replace"
+vpc_id                 = "replace"
+subnets                = ["replace", "replace", "replace"]
+ssh_cidr_block         = "replace"
+cert_validation_name   = "replace"
+cert_validation_record = "replace"

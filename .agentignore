@@ -1,9 +1,11 @@
 # General
 .git/
-.gitignore
+# .gitignore
 .vscode/
 assets/
 public/
+secrets/
+logs/
 
 # Python
 src/__pycache__/

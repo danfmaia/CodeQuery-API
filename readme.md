@@ -106,13 +106,13 @@ package.json
 You can and should customize the **CodeQuery API** using environment variables defined in a `.env` file.
 
 - **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
-- **`AGENTIGNORE_FILE`**: Change this if you want another file (such as `.gitignore`) to determine which files are to be ignored for the `/files/structure` endpoint. Note that those files can still be accessed by the `/files/content/` endpoint.
+- **`AGENTIGNORE_FILE_1`**: Change this if you want another file (such as `.gitignore`) to determine which files are to be ignored for the `/files/structure` endpoint. Note that those files can still be accessed by the `/files/content/` endpoint.
 
 Example `.env` file:
 
 ```
 PROJECT_PATH=../your-project/
-AGENTIGNORE_FILE=.agentignore
+AGENTIGNORE_FILE_1=.agentignore
 ```
 
 ## Installation and Setup
@@ -146,6 +146,48 @@ AGENTIGNORE_FILE=.agentignore
 
 4. The API will be available at `http://localhost:5001`.
 
+## Testing
+
+Before testing the public endpoints, ensure that the core API tests located in the `tests/` directory are passing. Running these tests ensures the core functionality is working as expected.
+
+### Running Core API Tests
+
+1. Install `pytest` if you haven’t already:
+
+   ```bash
+   conda activate venv/ && pip install pytest
+   ```
+
+2. Run the tests:
+
+   ```bash
+   export PYTHONPATH="$PYTHONPATH:/home/danfmaia/_repos/CodeQuery/CodeQuery-API" && pytest tests/
+   ```
+
+   This will execute all tests in the `tests/` directory and ensure the core API is functioning correctly.
+
+Once the core tests have passed, you can proceed to test the public endpoints.
+
+### Testing the Public API (Gateway)
+
+You can use **curl** commands or Postman to interact with the public API.
+
+#### Testing the Project Structure Retrieval
+
+```bash
+curl -H "X-API-KEY: <your-api-key>" http://localhost:5001/files/structure
+```
+
+#### Testing File Content Retrieval
+
+```bash
+curl -X POST -H "X-API-KEY: <your-api-key>" -d '{"file_paths": ["app.py", "requirements.txt"]}' http://localhost:5001/files/content
+```
+
+You can modify the request body to include different file paths and test how the API handles file retrieval and error scenarios.
+
+```
+
 ## Creating your own custom GPT for using this API
 
 This API was designed to be used by custom AI assistants. If you are a ChatGPT Premium user, you can create a custom GPT using the **ChatGPT Builder**.
@@ -156,166 +198,169 @@ This API was designed to be used by custom AI assistants. If you are a ChatGPT P
 2. Access the **Create** tab.
 3. Send the following prompt to the GPT Builder to create your custom GPT:
 
-   ```
-   Name: CodeQueryGPT
+```
 
-   Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project structure and files.
+Name: CodeQueryGPT
 
-   Instructions: You are CodeQueryGPT, an AI specialized in actively assisting with software development tasks by querying project files, analyzing code structure, answering questions, and providing direct coding support. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes querying the structure of the project to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
+Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project structure and files.
 
-   Conversation Starters:
-   - Analyse the current project structure and main files.
-   - Help me investigate and debug an issue in the code.
-   - I need assistance in developing a new feature.
-   - Analyze the main files and help me refactor them for better performance.
-   ```
+Instructions: You are CodeQueryGPT, an AI specialized in actively assisting with software development tasks by querying project files, analyzing code structure, answering questions, and providing direct coding support. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes querying the structure of the project to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features.
 
-   You can of course tweak some of the settings above.
+Conversation Starters:
+
+- Analyse the current project structure and main files.
+- Help me investigate and debug an issue in the code.
+- I need assistance in developing a new feature.
+- Analyze the main files and help me refactor them for better performance.
+
+````
+
+You can of course tweak some of the settings above.
 
 4. Once the GPT is created, go to the **Configure** tab.
 5. Enable the **"Code Interpreter & Data Analysis"** option.
 6. Create a new **Action** by providing the following **OpenAPI schema**:
 
-   ```json
-   {
-     "openapi": "3.1.0",
-     "info": {
-       "title": "CodeQuery API",
-       "description": "A Flask API to retrieve the file structure and contents of a project directory",
-       "version": "1.0.0"
-     },
-     "servers": [
-       {
-         "url": "<YOUR-GENERATED-NGROK-URL>"
-       }
-     ],
-     "paths": {
-       "/files/structure": {
-         "get": {
-           "summary": "Retrieve the file structure",
-           "description": "Returns the file structure of the project directory in a nested format, showing directories and files.",
-           "operationId": "getFileStructure",
-           "responses": {
-             "200": {
-               "description": "Successful response with the file structure",
-               "content": {
-                 "application/json": {
-                   "schema": {
-                     "type": "object",
-                     "properties": {
-                       "directories": {
-                         "type": "array",
-                         "items": {
-                           "type": "string"
-                         },
-                         "description": "List of directory names"
-                       },
-                       "files": {
-                         "type": "array",
-                         "items": {
-                           "type": "string"
-                         },
-                         "description": "List of file names"
-                       }
-                     }
-                   }
-                 }
-               }
-             }
-           }
-         }
-       },
-       "/files/content": {
-         "post": {
-           "summary": "Retrieve file contents",
-           "description": "Accepts a list of file paths and returns their contents or an error message if the file does not exist.",
-           "operationId": "retrieveFiles",
-           "requestBody": {
-             "content": {
-               "application/json": {
-                 "schema": {
-                   "type": "object",
-                   "properties": {
-                     "file_paths": {
-                       "type": "array",
-                       "items": {
-                         "type": "string"
-                       },
-                       "description": "A list of file paths to retrieve"
-                     }
-                   },
-                   "required": ["file_paths"]
-                 }
-               }
-             }
-           },
-           "responses": {
-             "200": {
-               "description": "Successful response with file contents",
-               "content": {
-                 "application/json": {
-                   "schema": {
-                     "type": "object",
-                     "properties": {
-                       "file_path": {
-                         "type": "object",
-                         "additionalProperties": {
-                           "type": "object",
-                           "properties": {
-                             "content": {
-                               "type": "string",
-                               "description": "The content of the file"
-                             },
-                             "error": {
-                               "type": "string",
-                               "description": "Error message in case of failure"
-                             }
-                           }
-                         }
-                       }
-                     }
-                   }
-                 }
-               }
-             },
-             "400": {
-               "description": "Error when no file paths are provided",
-               "content": {
-                 "application/json": {
-                   "schema": {
-                     "type": "object",
-                     "properties": {
-                       "error": {
-                         "type": "string",
-                         "description": "Error message"
-                       }
-                     }
-                   }
-                 }
-               }
-             },
-             "404": {
-               "description": "Error when all requested files are missing",
-               "content": {
-                 "application/json": {
-                   "schema": {
-                     "type": "object",
-                     "properties": {
-                       "error": {
-                         "type": "string",
-                         "description": "Error message"
-                       }
-                     }
-                   }
-                 }
-               }
-             }
-           }
-         }
-       }
-     }
-   }
-   ```
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CodeQuery API",
+    "description": "A Flask API to retrieve the file structure and contents of a project directory",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "<YOUR-GENERATED-NGROK-URL>"
+    }
+  ],
+  "paths": {
+    "/files/structure": {
+      "get": {
+        "summary": "Retrieve the file structure",
+        "description": "Returns the file structure of the project directory in a nested format, showing directories and files.",
+        "operationId": "getFileStructure",
+        "responses": {
+          "200": {
+            "description": "Successful response with the file structure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "directories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of directory names"
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of file names"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/content": {
+      "post": {
+        "summary": "Retrieve file contents",
+        "description": "Accepts a list of file paths and returns their contents or an error message if the file does not exist.",
+        "operationId": "retrieveFiles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "A list of file paths to retrieve"
+                  }
+                },
+                "required": ["file_paths"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with file contents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "file_path": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the file"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message in case of failure"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error when no file paths are provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error when all requested files are missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "description": "Error message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+````
 
 7. Make sure to update the `"servers.url"` field with your **ngrok** HTTPS URL, which you generate by running `ngrok http 5001` while the API is running locally.
 

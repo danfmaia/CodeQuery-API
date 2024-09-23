@@ -2,8 +2,7 @@ import os
 import logging
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from src.app_config import AppConfig
-
+import pathspec
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,7 +10,9 @@ load_dotenv()
 # Get project configuration from environment variables
 PROJECT_PATH = os.getenv('PROJECT_PATH', './')
 print(f"PROJECT_PATH: {PROJECT_PATH}")
-AGENTIGNORE_FILE = os.getenv('AGENTIGNORE_FILE', '.agentignore')
+
+# Load multiple ignore files
+AGENTIGNORE_FILES = os.getenv('AGENTIGNORE_FILES', '[]')
 
 app = Flask(__name__)
 
@@ -48,9 +49,6 @@ access_logger.addHandler(access_handler)
 ignored_patterns = []
 
 
-app_config = AppConfig()
-
-
 @app.before_request
 def log_request_info():
     """Log request details before handling."""
@@ -66,60 +64,56 @@ def log_response_info(response):
     return response
 
 
-def load_agentignore():
-    """Loads the .agentignore file and stores the ignored patterns."""
-    ignore_path = AGENTIGNORE_FILE
-    if os.path.exists(ignore_path):
-        with open(ignore_path, 'r', encoding='utf-8') as f:
-            app_config.ignored_patterns = [
-                line.strip() for line in f.readlines() if line.strip() and not line.strip().startswith('#')
-            ]
-    else:
-        app_config.ignored_patterns = []
+def load_ignore_spec():
+    """Load patterns from multiple ignore files using pathspec."""
+    ignore_files = AGENTIGNORE_FILES.split(
+        ',')  # Split by comma to get the list of files
+    combined_spec = None
+
+    for ignore_file in ignore_files:
+        if os.path.exists(ignore_file):
+            with open(ignore_file, 'r', encoding='utf-8') as f:
+                ignore_spec = pathspec.PathSpec.from_lines('gitwildmatch', f)
+                # Combine patterns from all ignore files
+                if combined_spec:
+                    combined_spec += ignore_spec
+                else:
+                    combined_spec = ignore_spec
+    return combined_spec
 
 
-def is_ignored(path):
-    """Checks if a file or directory should be ignored based on the .agentignore patterns."""
-    for pattern in app_config.ignored_patterns:
-        # Normalize both the pattern and the path
-        normalized_pattern = os.path.normpath(pattern).lstrip(os.sep)
-        normalized_path = os.path.normpath(path).lstrip(os.sep)
-
-        # Print statements for debugging
-        # print(f"Checking path: {normalized_path}\
-        #   against pattern: {normalized_pattern}")
-
-        # Check if the path is ignored (matches the pattern exactly or starts with the pattern)
-        if normalized_path == normalized_pattern or normalized_path.startswith(normalized_pattern):
-            # print(f"Ignoring path: {normalized_path}")
-            return True
-
-    return False
+def is_ignored(path, ignore_spec):
+    """Check if a path should be ignored based on the loaded patterns."""
+    # Normalize path to ensure proper matching, especially for nested directories
+    normalized_path = os.path.normpath(path)
+    return ignore_spec.match_file(normalized_path) if ignore_spec else False
 
 
 @app.route('/files/structure', methods=['GET'])
 def get_file_structure():
     """
-    Retrieves the project directory structure for AI-based file navigation.
+    Retrieves the project directory structure for AI analysis.
 
     Returns:
         dict: JSON object representing the project’s files and directories.
     """
+    ignore_spec = load_ignore_spec()
+
     def get_directory_structure(root_dir):
-        """Recursively builds the directory structure, ignoring files in .agentignore."""
+        """Recursively builds the directory structure, ignoring files based on the ignore spec."""
         dir_structure = {}
         for dirpath, dirnames, filenames in os.walk(root_dir):
             folder = os.path.relpath(dirpath, root_dir)
+            normalized_folder = os.path.normpath(folder)
 
-            # Normalize the folder path and check if it's ignored
-            if is_ignored(folder):
+            # Check if the folder or any files should be ignored
+            if is_ignored(normalized_folder, ignore_spec):
                 continue
 
-            # Filter out ignored directories and files
             dirnames[:] = [d for d in dirnames if not is_ignored(
-                os.path.join(folder, d))]
+                os.path.normpath(os.path.join(folder, d)), ignore_spec)]
             filenames = [f for f in filenames if not is_ignored(
-                os.path.join(folder, f))]
+                os.path.normpath(os.path.join(folder, f)), ignore_spec)]
 
             dir_structure[folder] = {
                 "files": filenames,
@@ -177,5 +171,5 @@ def get_file_content():
 
 
 if __name__ == '__main__':
-    load_agentignore()
+    load_ignore_spec()
     app.run(host='0.0.0.0', port=5001)
