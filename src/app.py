@@ -4,8 +4,6 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import pathspec
 
-from app_config import AppConfig
-
 # Load environment variables from .env file
 load_dotenv()
 
@@ -51,9 +49,6 @@ access_logger.addHandler(access_handler)
 ignored_patterns = []
 
 
-app_config = AppConfig()
-
-
 @app.before_request
 def log_request_info():
     """Log request details before handling."""
@@ -71,7 +66,8 @@ def log_response_info(response):
 
 def load_ignore_spec():
     """Load patterns from multiple ignore files using pathspec."""
-    ignore_files = eval(AGENTIGNORE_FILES)  # Parse the string into a list
+    ignore_files = AGENTIGNORE_FILES.split(
+        ',')  # Split by comma to get the list of files
     combined_spec = None
 
     for ignore_file in ignore_files:

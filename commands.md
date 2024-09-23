@@ -8,7 +8,9 @@ cd /home/danfmaia/\_repos/CodeQuery-API && source .env
 
 ### Check process statuses
 
-lsof -i :5001 && ps aux | grep ngrok
+source .env && tests/test_app.py
+
+lsof -i :5001 & ps aux | grep ngrok
 
 ### Testing
 

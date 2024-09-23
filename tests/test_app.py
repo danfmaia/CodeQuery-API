@@ -1,7 +1,7 @@
 from unittest.mock import mock_open, patch
 import json
 import pytest
-from src.app import app, load_ignore_spec, app_config
+from src.app import app, load_ignore_spec
 
 
 PROJECT_PATH = "./"
