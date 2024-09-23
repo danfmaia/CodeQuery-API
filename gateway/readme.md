@@ -64,20 +64,20 @@ To start or restart the application, use the following commands directly:
 #### Refresh the `.env` File:
 
 ```bash
-scp -i ../_secrets/codequery-keypair.pem .env ec2-user@<your-ec2-host>:/home/ec2-user/codequery-gateway
+scp -i ../secrets/codequery-keypair.pem .env ec2-user@<your-ec2-host>:/home/ec2-user/gateway
 ```
 
 #### Restart the FastAPI Server:
 
 ```bash
-ssh -i ../_secrets/codequery-keypair.pem ec2-user@<your-ec2-host> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
+ssh -i ../secrets/codequery-keypair.pem ec2-user@<your-ec2-host> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
 ```
 
 #### Deploy or Copy Application Files:
 
 ```bash
-scp -i ../_secrets/codequery-keypair.pem app.py ec2-user@<your-ec2-host>:/home/ec2-user/codequery-gateway
-scp -i ../_secrets/codequery-keypair.pem requirements.txt ec2-user@<your-ec2-host>:/home/ec2-user/codequery-gateway
+scp -i ../secrets/codequery-keypair.pem app.py ec2-user@<your-ec2-host>:/home/ec2-user/gateway
+scp -i ../secrets/codequery-keypair.pem requirements.txt ec2-user@<your-ec2-host>:/home/ec2-user/gateway
 ```
 
 ## Testing
@@ -111,7 +111,7 @@ curl -X POST -H "X-API-KEY: <your-api-key>" -d '{"file_paths": ["app.py", "requi
 You can restart the FastAPI service on the EC2 instance using SSH:
 
 ```bash
-ssh -i ../_secrets/codequery-keypair.pem ec2-user@<your-ec2-url> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
+ssh -i ../secrets/codequery-keypair.pem ec2-user@<your-ec2-url> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
 ```
 
 ## License

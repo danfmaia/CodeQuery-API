@@ -37,12 +37,12 @@ fi
 echo "ngrok URL: $NGROK_URL"
 
 # Step 3: Update the .env file with the new ngrok URL
-cd ../CodeQuery-Gateway || exit 1
+cd gateway/ || exit 1
 sed -i "s|^NGROK_URL=.*|NGROK_URL=${NGROK_URL}|" .env
 echo "Updated .env file with new ngrok URL."
 
 # Step 4: Copy the .env file to the EC2 instance
-scp -i "${KEY_PATH}" .env "${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/codequery-gateway"
+source .env && scp -i "${KEY_PATH}" .env "${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/gateway"
 if [ $? -ne 0 ]; then
     echo "Failed to copy .env to the server."
     exit 1
@@ -56,6 +56,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "FastAPI service restarted successfully."
+
+cd ../
 
 # Keep script running and wait for Ctrl+C (SIGINT)
 echo "Deployment complete. Flask app and ngrok are running. Press Ctrl+C to stop."

@@ -8,6 +8,7 @@ load_dotenv()
 app = FastAPI()
 
 NGROK_URL = os.getenv("NGROK_URL")
+print(f"NGROK_URL: {NGROK_URL}")  # Add this for debugging
 TIMEOUT = 10
 
 # Load API keys from environment variables (comma-separated keys)

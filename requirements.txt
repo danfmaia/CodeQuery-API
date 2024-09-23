@@ -2,3 +2,4 @@ flask
 pytest
 python-dotenv
 requests
+pathspec
