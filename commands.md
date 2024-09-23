@@ -4,15 +4,30 @@
 
 ## Core
 
-cd /home/danfmaia/\_repos/CodeQuery-API && source .env
-
-### Check process statuses
-
-source .env && tests/test_app.py
-
 lsof -i :5001 & ps aux | grep ngrok
 
 ### Testing
+
+source .env && curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
+
+## Gateway
+
+cd /home/danfmaia/\_repos/CodeQuery-API/gateway && source .env
+
+source .env
+
+### Terraform
+
+terraform init | terraform plan | terraform apply
+
+### Gateway Management
+
+ssh -i $KEY_PATH $EC2_USER@$EC2_HOST
+
+**Upload files:**
+
+scp -i $KEY_PATH .env gateway.py requirements.txt $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
+scp -i $KEY_PATH .env $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
 
 source .env && curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
 
