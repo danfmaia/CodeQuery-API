@@ -6,6 +6,7 @@ assets/
 public/
 secrets/
 logs/
+*_template
 
 # Python
 src/__pycache__/

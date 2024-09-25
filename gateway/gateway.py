@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+print("Starting FastAPI app...")
 app = FastAPI()
 
 NGROK_URL = os.getenv("NGROK_URL")
@@ -20,11 +21,24 @@ API_KEYS = {
 @app.middleware("http")
 async def api_key_validator(request: Request, call_next):
     """
-    Middleware to validate API Key.
+    Middleware to validate API Key, excluding certain endpoints.
     """
-    api_key = request.headers.get("x-api-key")
+    if request.url.path == "/":  # Exclude the root health check endpoint
+        return await call_next(request)
+
+    api_key = request.headers.get("x-api-key", None)
+
+    if api_key:
+        print(f'api_key: {api_key}')
+    else:
+        print('No API key provided')
+
+    print(f"Received API Key: {api_key}")
+    print(f"Expected API Keys: {API_KEYS}")
+
     if api_key not in API_KEYS:
         raise HTTPException(status_code=401, detail="Invalid API Key")
+
     response = await call_next(request)
     return response
 
