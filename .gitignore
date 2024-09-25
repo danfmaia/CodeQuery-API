@@ -18,3 +18,5 @@ gateway/commands.md
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+
+tests/results.txt
