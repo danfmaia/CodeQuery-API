@@ -208,10 +208,10 @@ Instructions: You are CodeQueryGPT, an AI specialized in actively assisting with
 
 Conversation Starters:
 
-- Analyse the current project structure and main files.
+- Query and analyse the current project structure and main files.
 - Help me investigate and debug an issue in the code.
 - I need assistance in developing a new feature.
-- Analyze the main files and help me refactor them for better performance.
+- Query and analyse the main files and help me refactor them for better performance.
 
 ````
 

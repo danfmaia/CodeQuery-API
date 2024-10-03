@@ -6,6 +6,8 @@ venv/
 
 secrets/
 logs/
+tests/results.txt
+temp.txt
 
 #
 # Gateway
@@ -18,5 +20,3 @@ gateway/commands.md
 *.tfstate
 *.tfstate.*
 terraform.tfvars
-
-tests/results.txt
