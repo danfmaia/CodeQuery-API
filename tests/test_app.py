@@ -1,7 +1,5 @@
 from unittest.mock import mock_open, patch
-import json
-import pytest
-from src.app import CodeQueryAPI  # Updated import to reflect the new class
+from src.app import CodeQueryAPI
 
 PROJECT_PATH = "./"
 AGENTIGNORE_FILE_1 = ".agentignore"
