@@ -12,6 +12,7 @@ class NgrokManager:
 
     def __init__(self):
         self.refresh_environment_variables()
+        self.terminal_app = os.getenv("TERMINAL_APP", "gnome-terminal")
 
     def refresh_environment_variables(self) -> None:
         """Refresh class attributes from the environment variables."""
@@ -21,12 +22,14 @@ class NgrokManager:
         self.timeout = int(os.getenv("TIMEOUT", "10"))
 
     def start_ngrok(self) -> str:
-        """Start ngrok and return the public URL."""
+        """Start ngrok in a new terminal and return the public URL."""
         try:
-            # Start ngrok as a subprocess
-            print("Starting ngrok...")
-            subprocess.run(["ngrok", "http", "8080"], check=True)
+            print(f"Starting ngrok in a new terminal window using {
+                  self.terminal_app}...")
 
+            # Start ngrok using the specified terminal application
+            subprocess.run([self.terminal_app, "--", "ngrok",
+                           "http", "8080"], check=True)
             time.sleep(2)  # Give ngrok a moment to start
 
             # Request the ngrok tunnels with a timeout
