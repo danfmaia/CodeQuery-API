@@ -24,12 +24,22 @@ class NgrokManager:
     def start_ngrok(self) -> str:
         """Start ngrok in a new terminal and return the public URL."""
         try:
-            print(f"Starting ngrok in a new terminal window using {
-                  self.terminal_app}...")
+            print(f"Starting ngrok in a new terminal window using \
+                  {self.terminal_app}...")
+
+            # Adjust command based on terminal type
+            if self.terminal_app == "gnome-terminal":
+                command = [self.terminal_app, "--", "ngrok", "http", "8080"]
+            # Adjust the command for terminator to run the entire command as a single string.
+            elif self.terminal_app == "terminator":
+                command = [self.terminal_app, "-e", "ngrok http 8080"]
+            else:
+                # Add other terminal configurations if needed
+                raise ValueError(f"Unsupported terminal application:\
+                                  {self.terminal_app}")
 
             # Start ngrok using the specified terminal application
-            subprocess.run([self.terminal_app, "--", "ngrok",
-                           "http", "8080"], check=True)
+            subprocess.run(command, check=True)
             time.sleep(2)  # Give ngrok a moment to start
 
             # Request the ngrok tunnels with a timeout
@@ -65,14 +75,14 @@ class NgrokManager:
         api_key = self.api_key
 
         if not gateway_url or not api_key:
-            print(f"Missing GATEWAY_UPLOAD_URL ({
-                  gateway_url}) or API_KEY ({api_key})")
+            print(f"Missing GATEWAY_UPLOAD_URL (\
+                  {gateway_url}) or API_KEY ({api_key})")
             return False
 
         try:
             response = requests.post(
                 gateway_url,
-                json={'ngrok_url': ngrok_url},
+                json={'api_key': api_key, 'ngrok_url': ngrok_url},
                 headers={'X-API-KEY': api_key},
                 timeout=self.timeout
             )
@@ -100,8 +110,8 @@ class NgrokManager:
                 print(f"ngrok is running: {ngrok_url}")
 
                 # Debugging to check URL values
-                print(f"ngrok_url: '{ngrok_url}', gateway_upload_url: '{
-                      self.gateway_upload_url}'")
+                print(f"ngrok_url: '{ngrok_url}', gateway_upload_url: '\
+                      {self.gateway_upload_url}'")
 
                 # Check if gateway_upload_url is set before comparing
                 if self.gateway_upload_url is None:
@@ -113,15 +123,13 @@ class NgrokManager:
                     print("ngrok URL is already synchronized with the gateway.")
                     return True
 
-                print(f"ngrok URL has changed. Updating gateway with new URL: {
-                      ngrok_url}")
+                print(f"ngrok URL has changed. Updating gateway with new URL: \
+                      {ngrok_url}")
                 return self.upload_ngrok_url_to_gateway(ngrok_url)
 
             print("No active ngrok tunnels found. Restarting ngrok...")
-            self.setup_ngrok()
             return False
 
         except requests.exceptions.RequestException:
             print("ngrok is not running. Setting up ngrok...")
-            self.setup_ngrok()
             return False
