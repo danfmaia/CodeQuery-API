@@ -47,6 +47,15 @@ class NgrokManager:
             print(f"Error starting ngrok: {e}")
             return None
 
+    def setup_ngrok(self) -> None:
+        """Initialize ngrok and upload the URL to the gateway."""
+        ngrok_url = self.start_ngrok()
+
+        if ngrok_url:
+            self.upload_ngrok_url_to_gateway(ngrok_url)
+        else:
+            print("Failed to start ngrok or retrieve the URL. Exiting setup.")
+
     def upload_ngrok_url_to_gateway(self, ngrok_url: str) -> bool:
         """Upload the ngrok URL to the gateway server."""
         gateway_url = self.gateway_upload_url
@@ -70,15 +79,6 @@ class NgrokManager:
         except requests.exceptions.RequestException as e:
             print(f"Failed to upload ngrok URL to gateway: {str(e)}")
             return False
-
-    def setup_ngrok(self) -> None:
-        """Initialize ngrok and upload the URL to the gateway."""
-        ngrok_url = self.start_ngrok()
-
-        if ngrok_url:
-            self.upload_ngrok_url_to_gateway(ngrok_url)
-        else:
-            print("Failed to start ngrok or retrieve the URL. Exiting setup.")
 
     def check_ngrok_status(self) -> bool:
         """

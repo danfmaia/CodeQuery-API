@@ -1,0 +1,1 @@
+clear && pytest tests/test_gateway.py -k 'test_get_ngrok_url_endpoint' | tee tests/results.txt
