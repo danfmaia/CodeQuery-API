@@ -6,7 +6,9 @@ venv/
 
 secrets/
 logs/
-tests/results.txt
+results.txt
+git_diff.txt
+command.txt
 temp.txt
 
 #

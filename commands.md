@@ -8,6 +8,8 @@ lsof -i :5001 && ps aux | grep ngrok
 
 ### Testing
 
+clear && pytest tests/ | tee tests/results.txt
+
 source .env && curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
 
 curl -H "X-API-KEY: $API_KEY" http://$EC2_HOST:8080/files/structure
