@@ -55,7 +55,8 @@ class TestNgrokManager:
         assert success is True
         mock_post.assert_called_once_with(
             'https://your-gateway-url/ngrok-url',
-            json={'ngrok_url': ngrok_url},
+            json={'api_key': 'your-api-key',
+                  'ngrok_url': ngrok_url},  # Include `api_key`
             headers={'X-API-KEY': 'your-api-key'},
             timeout=10
         )

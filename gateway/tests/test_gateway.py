@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
-from gateway import GatewayAPI
+from gateway import gateway_instance, GatewayAPI
 
 
-gateway_instance = GatewayAPI()
+# gateway_instance = GatewayAPI()
 
 
 class TestGatewayAPI(unittest.TestCase):
@@ -22,6 +22,12 @@ class TestGatewayAPI(unittest.TestCase):
         self.mock_s3_data = {
             "test-api-key": "https://example.ngrok.io"
         }
+
+    def test_health_check(self):
+        """Test the root health check endpoint."""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "FastAPI is running"})
 
     @patch('gateway.requests.get')
     def test_get_file_structure(self, mock_get):
@@ -80,37 +86,70 @@ class TestGatewayAPI(unittest.TestCase):
         self.assertEqual(response.json(), {
                          "status": "success", "message": "ngrok URL updated for API key test-api-key"})
 
-    # @patch.dict('os.environ', {'API_KEYS': 'test-key,other-valid-key'})
-    # def test_api_key_validator_middleware(self):
-    #     """Test the API key validator middleware with a valid and invalid key."""
-    #     # Reinitialize `self.gateway_instance.api_keys` based on the patched environment variable
-    #     self.gateway_instance.api_keys = {
-    #         key: f"User{index + 1}" for index, key in enumerate(os.getenv("API_KEYS").split(","))
-    #     }
+    def test_dynamic_s3_update(self):
+        """Test middleware's ability to handle dynamic changes in S3."""
+        # Set initial ngrok URL in the mock data
+        self.mock_s3_data["test-key"] = "https://initial-ngrok-url.ngrok.io"
+        with patch.object(self.gateway_instance.s3_manager, 'load_ngrok_url', side_effect=lambda api_key: self.mock_s3_data.get(api_key)):
 
-    #     # Debug print to verify the correct keys are set
-    #     print(f"DEBUG: Current API Keys: {self.gateway_instance.api_keys}")
+            # Validate the initial ngrok URL
+            headers = {"x-api-key": "test-key"}
+            response = self.client.get("/files/structure", headers=headers)
+            self.assertNotEqual(response.status_code, 401)
+            print(f"Initial ngrok URL: {
+                  self.gateway_instance.ngrok_url_cache.get('test-key', '')}")
+            self.assertIn("initial-ngrok-url.ngrok.io",
+                          self.gateway_instance.ngrok_url_cache.get("test-key", ""))
 
-    #     # Test with a valid API key
-    #     headers = {"x-api-key": "test-key"}
-    #     response = self.client.get("/files/structure", headers=headers)
-    #     # Should not return Unauthorized
-    #     self.assertNotEqual(response.status_code, 401)
+            # Simulate dynamic update in S3
+            self.mock_s3_data["test-key"] = "https://updated-ngrok-url.ngrok.io"
+            print(f"DEBUG: Simulated S3 Update: {self.mock_s3_data}")
 
-    #     # Test with another valid API key
-    #     headers = {"x-api-key": "other-valid-key"}
-    #     response = self.client.get("/files/structure", headers=headers)
-    #     # Should not return Unauthorized
-    #     self.assertNotEqual(response.status_code, 401)
+            # Call the update method to refresh the cache
+            self.gateway_instance.update_ngrok_url_from_s3("test-key")
 
-    #     # Test with an invalid API key (not in `self.api_keys`)
-    #     headers = {"x-api-key": "invalid-key"}
-    #     response = self.client.get("/files/structure", headers=headers)
-    #     # Should return Unauthorized
-    #     self.assertEqual(response.status_code, 401)
+            # Validate that the ngrok URL was updated
+            print(f"Updated ngrok URL: {
+                  self.gateway_instance.ngrok_url_cache.get('test-key', '')}")
+            self.assertIn("updated-ngrok-url.ngrok.io",
+                          self.gateway_instance.ngrok_url_cache.get("test-key", ""))
 
-    def test_health_check(self):
-        """Test the root health check endpoint."""
-        response = self.client.get("/")
+    @patch.dict('os.environ', {'API_KEYS': 'test-key,other-valid-key'})
+    @patch('gateway.requests.get')
+    def test_api_key_validator_middleware(self, mock_requests_get):
+        """Test the API key validator middleware using ngrok URL cache validation."""
+
+        # Set up a mock response for requests.get to simulate the /files/structure endpoint
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "structure": ["file1.py", "file2.py"]
+        }
+        mock_requests_get.return_value = mock_response
+
+        # Re-initialize the gateway instance after setting environment variables
+        self.gateway_instance = GatewayAPI()
+        self.client = TestClient(self.gateway_instance.app)
+
+        # Manually set the ngrok URL for each key in the cache
+        self.gateway_instance.ngrok_url_cache["test-key"] = "https://8517-2804-1b3-7000-829a-410e-f19-1fd0-eff4.ngrok-free.app"
+        self.gateway_instance.ngrok_url_cache["other-valid-key"] = "https://8517-2804-1b3-7000-829a-410e-f19-1fd0-eff4.ngrok-free.app"
+
+        # Test with a valid API key (test-key)
+        headers = {"x-api-key": "test-key"}
+        response = self.client.get("/files/structure", headers=headers)
+        print(f"Response for 'test-key': {response.json()}")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"message": "FastAPI is running"})
+
+        # Test with another valid API key (other-valid-key)
+        headers = {"x-api-key": "other-valid-key"}
+        response = self.client.get("/files/structure", headers=headers)
+        print(f"Response for 'other-valid-key': {response.json()}")
+        self.assertEqual(response.status_code, 200)
+
+        # Test with an invalid API key and validate the 401 response
+        headers = {"x-api-key": "invalid-key"}
+        response = self.client.get("/files/structure", headers=headers)
+        print(f"Response for 'invalid-key': {response.json()}")
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Invalid API Key"})

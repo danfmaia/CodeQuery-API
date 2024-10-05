@@ -47,6 +47,8 @@ class NgrokManager:
             response.raise_for_status()  # Raise an exception for bad status codes
 
             tunnels = response.json().get('tunnels', [])
+            # Add this line to debug tunnels
+            print(f"Tunnel response: {tunnels}")
             for tunnel in tunnels:
                 if tunnel.get('proto') == 'https':
                     ngrok_url = tunnel['public_url']
@@ -105,31 +107,29 @@ class NgrokManager:
             response = requests.get(self.ngrok_api_url, timeout=self.timeout)
             response.raise_for_status()
             tunnels = response.json().get("tunnels", [])
+            print(f"Tunnel response: {tunnels}")
+
             if tunnels:
                 ngrok_url = tunnels[0].get("public_url")
                 print(f"ngrok is running: {ngrok_url}")
 
-                # Debugging to check URL values
-                print(f"ngrok_url: '{ngrok_url}', gateway_upload_url: '\
-                      {self.gateway_upload_url}'")
-
-                # Check if gateway_upload_url is set before comparing
                 if self.gateway_upload_url is None:
                     print("Warning: GATEWAY_UPLOAD_URL is not set.")
                     return False
 
-                # Improved URL comparison with stripping and lowercasing
                 if ngrok_url.strip().lower() == self.gateway_upload_url.strip().lower():
                     print("ngrok URL is already synchronized with the gateway.")
                     return True
 
-                print(f"ngrok URL has changed. Updating gateway with new URL: \
-                      {ngrok_url}")
+                print(f"ngrok URL has changed. Updating gateway with new URL: {
+                      ngrok_url}")
                 return self.upload_ngrok_url_to_gateway(ngrok_url)
 
             print("No active ngrok tunnels found. Restarting ngrok...")
+            self.setup_ngrok()  # <== Added this line to call setup_ngrok
             return False
 
         except requests.exceptions.RequestException:
             print("ngrok is not running. Setting up ngrok...")
+            self.setup_ngrok()  # <== Added this line to call setup_ngrok in exception case
             return False

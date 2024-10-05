@@ -32,7 +32,10 @@ class S3Manager:
         try:
             response = self.s3_client.get_object(
                 Bucket=self.bucket_name, Key=self.object_key)
-            ngrok_data = json.loads(response['Body'].read().decode('utf-8'))
+            raw_data = response['Body'].read().decode('utf-8')
+            # Debug statement to verify raw data
+            print(f"DEBUG: Raw S3 Response: {raw_data}")
+            ngrok_data = json.loads(raw_data)
             return ngrok_data.get(api_key)
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
