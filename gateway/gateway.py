@@ -70,8 +70,8 @@ class GatewayAPI:
             api_key = request.headers.get("x-api-key")
 
             # Print the state before validation
-            print(f"DEBUG: Validating API Key: {
-                api_key} | Available API Keys: {self.api_keys}")
+            print(f"DEBUG: Validating API Key: \
+                  {api_key} | Available API Keys: {self.api_keys}")
 
             if not api_key:
                 print("DEBUG: No API Key provided.")
@@ -86,8 +86,8 @@ class GatewayAPI:
 
             # Rewrite the base URL using the ngrok URL
             request.scope["server"] = (ngrok_url.replace("https://", ""), 443)
-            print(f"DEBUG: Rewritten server for {
-                api_key}: {request.scope['server']}")
+            print(f"DEBUG: Rewritten server for \
+                  {api_key}: {request.scope['server']}")
 
             return await call_next(request)
 

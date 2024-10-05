@@ -1,3 +1,4 @@
+# from parameterized import parameterized
 import unittest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
@@ -96,8 +97,8 @@ class TestGatewayAPI(unittest.TestCase):
             headers = {"x-api-key": "test-key"}
             response = self.client.get("/files/structure", headers=headers)
             self.assertNotEqual(response.status_code, 401)
-            print(f"Initial ngrok URL: {
-                  self.gateway_instance.ngrok_url_cache.get('test-key', '')}")
+            print(f"Initial ngrok URL: \
+                  {self.gateway_instance.ngrok_url_cache.get('test-key', '')}")
             self.assertIn("initial-ngrok-url.ngrok.io",
                           self.gateway_instance.ngrok_url_cache.get("test-key", ""))
 
@@ -109,8 +110,8 @@ class TestGatewayAPI(unittest.TestCase):
             self.gateway_instance.update_ngrok_url_from_s3("test-key")
 
             # Validate that the ngrok URL was updated
-            print(f"Updated ngrok URL: {
-                  self.gateway_instance.ngrok_url_cache.get('test-key', '')}")
+            print(f"Updated ngrok URL: \
+                  {self.gateway_instance.ngrok_url_cache.get('test-key', '')}")
             self.assertIn("updated-ngrok-url.ngrok.io",
                           self.gateway_instance.ngrok_url_cache.get("test-key", ""))
 
@@ -119,7 +120,7 @@ class TestGatewayAPI(unittest.TestCase):
     def test_api_key_validator_middleware(self, mock_requests_get):
         """Test the API key validator middleware using ngrok URL cache validation."""
 
-        # Set up a mock response for requests.get to simulate the /files/structure endpoint
+        # Set up a reusable mock response for requests.get to simulate the /files/structure endpoint
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -131,25 +132,23 @@ class TestGatewayAPI(unittest.TestCase):
         self.gateway_instance = GatewayAPI()
         self.client = TestClient(self.gateway_instance.app)
 
-        # Manually set the ngrok URL for each key in the cache
-        self.gateway_instance.ngrok_url_cache["test-key"] = "https://8517-2804-1b3-7000-829a-410e-f19-1fd0-eff4.ngrok-free.app"
-        self.gateway_instance.ngrok_url_cache["other-valid-key"] = "https://8517-2804-1b3-7000-829a-410e-f19-1fd0-eff4.ngrok-free.app"
+        # Manually set the ngrok URL for each key in the cache using a common helper function
+        mock_urls = {
+            "test-key": "https://mocked-ngrok-url-for-test-key.ngrok.io",
+            "other-valid-key": "https://mocked-ngrok-url-for-other-key.ngrok.io"
+        }
+        self.gateway_instance.ngrok_url_cache.update(mock_urls)
 
-        # Test with a valid API key (test-key)
-        headers = {"x-api-key": "test-key"}
-        response = self.client.get("/files/structure", headers=headers)
-        print(f"Response for 'test-key': {response.json()}")
-        self.assertEqual(response.status_code, 200)
+        # Define test cases
+        test_cases = [
+            ("test-key", 200, {"structure": ["file1.py", "file2.py"]}),
+            ("other-valid-key", 200, {"structure": ["file1.py", "file2.py"]}),
+            ("invalid-key", 401, {"detail": "Invalid API Key"}),
+        ]
 
-        # Test with another valid API key (other-valid-key)
-        headers = {"x-api-key": "other-valid-key"}
-        response = self.client.get("/files/structure", headers=headers)
-        print(f"Response for 'other-valid-key': {response.json()}")
-        self.assertEqual(response.status_code, 200)
-
-        # Test with an invalid API key and validate the 401 response
-        headers = {"x-api-key": "invalid-key"}
-        response = self.client.get("/files/structure", headers=headers)
-        print(f"Response for 'invalid-key': {response.json()}")
-        self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json(), {"detail": "Invalid API Key"})
+        # Run the test cases using a loop
+        for api_key, expected_status, expected_response in test_cases:
+            headers = {"x-api-key": api_key}
+            response = self.client.get("/files/structure", headers=headers)
+            self.assertEqual(response.status_code, expected_status)
+            self.assertEqual(response.json(), expected_response)
