@@ -135,15 +135,29 @@ class GatewayAPI:
             """
             Retrieve the content of specified files from the Codebase Query API.
             """
+            api_key = request.headers.get("x-api-key")
+            if not api_key:
+                raise HTTPException(status_code=401, detail="API Key missing")
+
+            # Retrieve the ngrok URL based on the API key
+            ngrok_url = self.ngrok_url_cache.get(api_key)
+            if not ngrok_url:
+                raise HTTPException(
+                    status_code=404, detail=f"No ngrok URL found for API key {api_key}")
+
+            print(f"DEBUG: Retrieved ngrok URL for {api_key}: {ngrok_url}")
+            print(f"DEBUG: Current ngrok URL Cache: {self.ngrok_url_cache}")
+
+            # Use the ngrok URL dynamically updated by the middleware
             try:
-                # Use the ngrok URL dynamically updated by the middleware
                 response = requests.post(
-                    f"{self.ngrok_url}/files/content", json=request_data, timeout=self.timeout)
+                    f"{ngrok_url}/files/content", json=request_data, timeout=self.timeout)
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:
                 raise HTTPException(
-                    status_code=500, detail=f"Error retrieving file content: {str(e)}") from e
+                    status_code=500, detail=f"Error retrieving file content: {str(e)}"
+                ) from e
 
         # New Endpoint: Update ngrok URL
         @self.app.post("/ngrok-urls/")

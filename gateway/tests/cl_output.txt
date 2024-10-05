@@ -1,0 +1,59 @@
+❯ ./run_ec2_tests.sh
+Starting the EC2 test automation script...
+Syncing project files to EC2 instance...
+sending incremental file list
+tests/
+
+sent 340 bytes  received 17 bytes  714,00 bytes/sec
+total size is 20.621  speedup is 57,76
+Installing requirements on EC2...
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: fastapi in ./.local/lib/python3.9/site-packages (from -r /home/ec2-user/gateway/requirements.txt (line 1)) (0.115.0)
+Requirement already satisfied: uvicorn in ./.local/lib/python3.9/site-packages (from -r /home/ec2-user/gateway/requirements.txt (line 2)) (0.31.0)
+Requirement already satisfied: requests in /usr/lib/python3.9/site-packages (from -r /home/ec2-user/gateway/requirements.txt (line 3)) (2.25.1)
+Requirement already satisfied: python-dotenv in ./.local/lib/python3.9/site-packages (from -r /home/ec2-user/gateway/requirements.txt (line 4)) (1.0.1)
+Requirement already satisfied: boto3 in ./.local/lib/python3.9/site-packages (from -r /home/ec2-user/gateway/requirements.txt (line 5)) (1.35.33)
+Requirement already satisfied: starlette<0.39.0,>=0.37.2 in ./.local/lib/python3.9/site-packages (from fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (0.38.6)
+Requirement already satisfied: typing-extensions>=4.8.0 in ./.local/lib/python3.9/site-packages (from fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (4.12.2)
+Requirement already satisfied: pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4 in ./.local/lib/python3.9/site-packages (from fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (2.9.2)
+Requirement already satisfied: h11>=0.8 in ./.local/lib/python3.9/site-packages (from uvicorn->-r /home/ec2-user/gateway/requirements.txt (line 2)) (0.14.0)
+Requirement already satisfied: click>=7.0 in ./.local/lib/python3.9/site-packages (from uvicorn->-r /home/ec2-user/gateway/requirements.txt (line 2)) (8.1.7)
+Requirement already satisfied: urllib3<1.27,>=1.21.1 in /usr/lib/python3.9/site-packages (from requests->-r /home/ec2-user/gateway/requirements.txt (line 3)) (1.25.10)
+Requirement already satisfied: chardet<5,>=3.0.2 in /usr/lib/python3.9/site-packages (from requests->-r /home/ec2-user/gateway/requirements.txt (line 3)) (4.0.0)
+Requirement already satisfied: idna<3,>=2.5 in /usr/lib/python3.9/site-packages (from requests->-r /home/ec2-user/gateway/requirements.txt (line 3)) (2.10)
+Requirement already satisfied: botocore<1.36.0,>=1.35.33 in ./.local/lib/python3.9/site-packages (from boto3->-r /home/ec2-user/gateway/requirements.txt (line 5)) (1.35.33)
+Requirement already satisfied: jmespath<2.0.0,>=0.7.1 in /usr/lib/python3.9/site-packages (from boto3->-r /home/ec2-user/gateway/requirements.txt (line 5)) (0.10.0)
+Requirement already satisfied: s3transfer<0.11.0,>=0.10.0 in ./.local/lib/python3.9/site-packages (from boto3->-r /home/ec2-user/gateway/requirements.txt (line 5)) (0.10.2)
+Requirement already satisfied: python-dateutil<3.0.0,>=2.1 in /usr/lib/python3.9/site-packages (from botocore<1.36.0,>=1.35.33->boto3->-r /home/ec2-user/gateway/requirements.txt (line 5)) (2.8.1)
+Requirement already satisfied: pydantic-core==2.23.4 in ./.local/lib/python3.9/site-packages (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (2.23.4)
+Requirement already satisfied: annotated-types>=0.6.0 in ./.local/lib/python3.9/site-packages (from pydantic!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0,>=1.7.4->fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (0.7.0)
+Requirement already satisfied: anyio<5,>=3.4.0 in ./.local/lib/python3.9/site-packages (from starlette<0.39.0,>=0.37.2->fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (4.6.0)
+Requirement already satisfied: exceptiongroup>=1.0.2 in ./.local/lib/python3.9/site-packages (from anyio<5,>=3.4.0->starlette<0.39.0,>=0.37.2->fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (1.2.2)
+Requirement already satisfied: sniffio>=1.1 in ./.local/lib/python3.9/site-packages (from anyio<5,>=3.4.0->starlette<0.39.0,>=0.37.2->fastapi->-r /home/ec2-user/gateway/requirements.txt (line 1)) (1.3.1)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3.9/site-packages (from python-dateutil<3.0.0,>=2.1->botocore<1.36.0,>=1.35.33->boto3->-r /home/ec2-user/gateway/requirements.txt (line 5)) (1.15.0)
+Restarting the FastAPI server...
+● fastapi.service - FastAPI app
+     Loaded: loaded (/etc/systemd/system/fastapi.service; enabled; preset: disabled)
+     Active: active (running) since Sat 2024-10-05 20:08:08 UTC; 102ms ago
+   Main PID: 485882 (uvicorn)
+      Tasks: 1 (limit: 1112)
+     Memory: 6.9M
+        CPU: 45ms
+     CGroup: /system.slice/fastapi.service
+             └─485882 /home/ec2-user/gateway/venv/bin/python3 /home/ec2-user/gateway/venv/bin/uvicorn gateway:app --host 0.0.0.0 --port 8080
+
+Oct 05 20:08:08 ip-172-31-42-110.sa-east-1.compute.internal systemd[1]: Started fastapi.service - FastAPI app.
+Running tests on EC2...
+============================= test session starts ==============================
+platform linux -- Python 3.9.16, pytest-8.3.3, pluggy-1.5.0
+rootdir: /home/ec2-user/gateway
+plugins: anyio-4.6.0
+collected 10 items
+
+tests/test_gateway.py .......                                            [ 70%]
+tests/test_s3_manager.py ...                                             [100%]
+
+============================== 10 passed in 1.19s ==============================
+Downloading test results from EC2...
+results.txt                                                                                                   100%  456    30.8KB/s   00:00    
+Test automation script completed successfully.
