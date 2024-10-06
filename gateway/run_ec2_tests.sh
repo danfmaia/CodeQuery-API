@@ -48,7 +48,7 @@ ssh -i "$KEY_PATH" "$EC2_USER@$EC2_HOST" "cd /home/$EC2_USER/gateway && pytest t
 
 # Download test results from EC2
 echo "Downloading test results from EC2..."
-scp -i "$KEY_PATH" "$EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway/tests/results.txt" tests/ec2_results.txt
+scp -i "$KEY_PATH" "$EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway/tests/results.txt" tests/results.txt
 
 # Complete
 echo "Test automation script completed successfully."

@@ -121,8 +121,8 @@ class NgrokManager:
                     print("ngrok URL is already synchronized with the gateway.")
                     return True
 
-                print(f"ngrok URL has changed. Updating gateway with new URL: {
-                      ngrok_url}")
+                print(f"ngrok URL has changed. Updating gateway with new URL: \
+                      {ngrok_url}")
                 return self.upload_ngrok_url_to_gateway(ngrok_url)
 
             print("No active ngrok tunnels found. Restarting ngrok...")

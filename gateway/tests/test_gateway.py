@@ -1,11 +1,9 @@
-# from parameterized import parameterized
 import unittest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
-from gateway import gateway_instance, GatewayAPI
+from gateway import GatewayAPI
 
-
-# gateway_instance = GatewayAPI()
+# gateway_instance_ = gateway_instance
 
 
 class TestGatewayAPI(unittest.TestCase):
@@ -60,12 +58,11 @@ class TestGatewayAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"file1.py": "print('Hello World')"})
 
-    @patch.object(gateway_instance, 's3_manager')
+    @patch('gateway.gateway_instance.s3_manager')
     def test_get_ngrok_url_endpoint(self, mock_s3_manager):
         """Test the /ngrok-urls/{api_key} endpoint."""
         self.mock_s3_data["test-api-key"] = "https://example.ngrok.io"
-        mock_s3_manager.load_ngrok_url.side_effect = lambda api_key: self.mock_s3_data.get(
-            api_key, "")
+        mock_s3_manager.load_ngrok_url.side_effect = self.mock_s3_data.get
 
         headers = {"x-api-key": "test-key"}
         response = self.client.get("/ngrok-urls/test-api-key", headers=headers)
@@ -73,11 +70,10 @@ class TestGatewayAPI(unittest.TestCase):
         self.assertEqual(response.json(), {
                          "api_key": "test-api-key", "ngrok_url": "https://example.ngrok.io"})
 
-    @patch.object(gateway_instance, 's3_manager')
+    @patch('gateway.gateway_instance.s3_manager')
     def test_update_ngrok_url_endpoint(self, mock_s3_manager):
         """Test the /ngrok-urls/ POST endpoint."""
-        mock_s3_manager.update_ngrok_url.side_effect = lambda api_key, url: self.mock_s3_data.update({
-                                                                                                     api_key: url})
+        mock_s3_manager.update_ngrok_url.side_effect = self.mock_s3_data.update
 
         headers = {"x-api-key": "test-key"}
         response = self.client.post(
@@ -91,7 +87,7 @@ class TestGatewayAPI(unittest.TestCase):
         """Test middleware's ability to handle dynamic changes in S3."""
         # Set initial ngrok URL in the mock data
         self.mock_s3_data["test-key"] = "https://initial-ngrok-url.ngrok.io"
-        with patch.object(self.gateway_instance.s3_manager, 'load_ngrok_url', side_effect=lambda api_key: self.mock_s3_data.get(api_key)):
+        with patch.object(self.gateway_instance.s3_manager, 'load_ngrok_url', side_effect=self.mock_s3_data.get):
 
             # Validate the initial ngrok URL
             headers = {"x-api-key": "test-key"}

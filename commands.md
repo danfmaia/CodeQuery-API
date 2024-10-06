@@ -29,13 +29,6 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
 ]
 }' https://codequery.dev/files/content
 
-#### POST /ngrok-urls/
-
-curl -X POST "https://codequery.dev/ngrok-urls/" \
- -H "Content-Type: application/json" \
- -H "x-api-key: $API_KEY" \
- -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
-
 #### GET /ngrok-urls/$API_KEY
 
 curl -X GET "https://codequery.dev/ngrok-urls/$API_KEY" \
@@ -43,3 +36,10 @@ curl -X GET "https://codequery.dev/ngrok-urls/$API_KEY" \
 
 curl -X GET "https://codequery.dev/ngrok-urls/other-valid-key" \
  -H "x-api-key: $API_KEY"
+
+#### POST /ngrok-urls/
+
+curl -X POST "https://codequery.dev/ngrok-urls/" \
+ -H "Content-Type: application/json" \
+ -H "x-api-key: $API_KEY" \
+ -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
