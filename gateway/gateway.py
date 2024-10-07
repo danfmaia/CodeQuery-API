@@ -141,12 +141,24 @@ class GatewayAPI:
 
             # Retrieve the ngrok URL based on the API key
             ngrok_url = self.ngrok_url_cache.get(api_key)
-            if not ngrok_url:
-                raise HTTPException(
-                    status_code=404, detail=f"No ngrok URL found for API key {api_key}")
 
-            print(f"DEBUG: Retrieved ngrok URL for {api_key}: {ngrok_url}")
-            print(f"DEBUG: Current ngrok URL Cache: {self.ngrok_url_cache}")
+            # Debug log to check the value of ngrok_url before use
+            self.logger.info(f"Retrieved ngrok URL for API key \
+                             {api_key}: {ngrok_url}")
+
+            if not ngrok_url or not ngrok_url.startswith("https://"):
+                # If invalid, force a refresh from S3
+                self.update_ngrok_url_from_s3(api_key)
+                ngrok_url = self.ngrok_url_cache.get(api_key)
+                self.logger.info(f"After forced refresh, ngrok URL for '\
+                                 {api_key}' is: {ngrok_url}")
+
+                if not ngrok_url or not ngrok_url.startswith("https://"):
+                    return JSONResponse(status_code=500, content={"detail": f"Invalid ngrok URL for API key {api_key} even after refresh."})
+
+            # Debug log for tracing the request
+            print(f"DEBUG: Making request to \
+                  {ngrok_url}/files/structure with API key: {api_key}")
 
             # Use the ngrok URL dynamically updated by the middleware
             try:
@@ -156,11 +168,15 @@ class GatewayAPI:
                 # Check if response is None or has no content
                 if not response or response.status_code != 200:
                     raise HTTPException(
-                        status_code=500, detail="Error retrieving file structure. Response is invalid or empty.")
+                        status_code=500, detail="Error retrieving file structure. Response is invalid or empty."
+                    )
 
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.RequestException as e:
+                # Add additional logging to capture the full error
+                self.logger.error(f"Failed request to \
+                                  {ngrok_url}/files/structure with exception: {e}")
                 raise HTTPException(
                     status_code=500, detail=f"Error retrieving file structure: {str(e)}"
                 ) from e

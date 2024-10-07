@@ -99,6 +99,11 @@ class CodeQueryAPI:
     def setup_routes(self):
         """Define all the routes for the Flask app."""
 
+        @self.app.route('/health', methods=['GET'])
+        def health_check():
+            """Basic public health check to confirm server status."""
+            return jsonify({"status": "Healthy", "message": "CodeQuery Core is running"}), 200
+
         @self.app.route('/files/structure', methods=['GET'])
         def get_file_structure():
             """Retrieves the project directory structure for AI analysis."""
@@ -139,7 +144,8 @@ class CodeQueryAPI:
 
     def run(self):
         """Run the Flask application."""
-        self.app.run(host='0.0.0.0', port=5001)
+        local_port = int(os.getenv("LOCAL_PORT", "5001"))
+        self.app.run(host='0.0.0.0', port=local_port)
 
 
 # Entry point for running the application

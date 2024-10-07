@@ -12,9 +12,30 @@ curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]
 
 clear && pytest tests/ | tee tests/results.txt
 
-### Endpoints
+### Core-side Endpoints
 
 source .env
+
+#### Health check
+
+export NGROK_TEST_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]+\.ngrok-free\.app')
+
+curl -X GET $NGROK_TEST_URL/health
+
+#### GET /files/structure
+
+curl -H "X-API-KEY: $API_KEY" $NGROK_TEST_URL/files/structure
+
+#### POST /files/content
+
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+"file_paths": [
+"gateway/gateway.py",
+"gateway/src/s3_manager.py"
+]
+}' $NGROK_TEST_URL/files/content
+
+### Gateway-side Endpoints
 
 #### GET /files/structure
 
@@ -51,7 +72,7 @@ curl -X POST "https://codequery.dev/ngrok-urls/" \
  -H "x-api-key: $API_KEY" \
  -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
 
-**Access via SSH:**
+## Service Management
 
 **Restart service:**
 

@@ -1,5 +1,6 @@
 # src/services/file_service.py
 
+import logging
 import os
 import pathspec
 
@@ -12,6 +13,7 @@ class FileService:
     def __init__(self, project_path, agentignore_files):
         self.project_path = project_path
         self.agentignore_files = agentignore_files
+        self.logger = logging.getLogger("FileService")
 
     def load_ignore_spec(self):
         """Load patterns from multiple ignore files using pathspec."""
@@ -24,6 +26,7 @@ class FileService:
                     ignore_spec = pathspec.PathSpec.from_lines(
                         'gitwildmatch', f)
                     combined_spec = ignore_spec if combined_spec is None else combined_spec + ignore_spec
+        self.logger.debug(f"Loaded ignore spec: {combined_spec}")
         return combined_spec
 
     def is_ignored(self, path, ignore_spec):
@@ -41,7 +44,9 @@ class FileService:
                 folder = os.path.relpath(dirpath, root_dir)
                 normalized_folder = os.path.normpath(folder)
 
+                # Skip ignored directories
                 if self.is_ignored(normalized_folder, ignore_spec):
+                    self.logger.debug(f"Ignored folder: {normalized_folder}")
                     continue
 
                 dirnames[:] = [d for d in dirnames if not self.is_ignored(
@@ -55,7 +60,13 @@ class FileService:
                 }
             return dir_structure
 
-        return traverse_directory(self.project_path)
+        try:
+            structure = traverse_directory(self.project_path)
+            self.logger.info(f"Retrieved directory structure: {structure}")
+            return structure
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve directory structure: {e}")
+            raise
 
     def get_file_content(self, file_paths):
         """Retrieve the content of specified files."""

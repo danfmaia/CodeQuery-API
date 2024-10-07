@@ -26,26 +26,28 @@ class NgrokManager:
         try:
             print(f"Starting ngrok in the background...")
 
-            # Run ngrok directly as a background process using subprocess.Popen
-            ngrok_command = ["ngrok", "http", "8080"]
-            process = subprocess.Popen(
-                ngrok_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            time.sleep(5)  # Give ngrok a moment to start
+            # Run ngrok using a context manager to properly manage the process resource
+            local_port = os.getenv("LOCAL_PORT", "5001")
+            ngrok_command = ["ngrok", "http", local_port]
 
-            # Request the ngrok tunnels with a timeout
-            response = requests.get(self.ngrok_api_url, timeout=self.timeout)
-            response.raise_for_status()  # Raise an exception for bad status codes
+            with subprocess.Popen(ngrok_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+                time.sleep(5)  # Give ngrok a moment to start
 
-            tunnels = response.json().get('tunnels', [])
-            print(f"Tunnel response: {tunnels}")
-            for tunnel in tunnels:
-                if tunnel.get('proto') == 'https':
-                    ngrok_url = tunnel['public_url']
-                    print(f"ngrok URL: {ngrok_url}")
-                    return ngrok_url
+                # Request the ngrok tunnels with a timeout
+                response = requests.get(
+                    self.ngrok_api_url, timeout=self.timeout)
+                response.raise_for_status()  # Raise an exception for bad status codes
 
-            print("No valid ngrok URL found.")
-            return None
+                tunnels = response.json().get('tunnels', [])
+                print(f"Tunnel response: {tunnels}")
+                for tunnel in tunnels:
+                    if tunnel.get('proto') == 'https':
+                        ngrok_url = tunnel['public_url']
+                        print(f"ngrok URL: {ngrok_url}")
+                        return ngrok_url
+
+                print("No valid ngrok URL found.")
+                return None
 
         except (subprocess.CalledProcessError, requests.RequestException) as e:
             print(f"Error starting ngrok: {e}")
