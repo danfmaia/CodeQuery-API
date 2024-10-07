@@ -22,32 +22,21 @@ class NgrokManager:
         self.timeout = int(os.getenv("TIMEOUT", "10"))
 
     def start_ngrok(self) -> str:
-        """Start ngrok in a new terminal and return the public URL."""
+        """Start ngrok in a background process and return the public URL."""
         try:
-            print(f"Starting ngrok in a new terminal window using \
-                  {self.terminal_app}...")
+            print(f"Starting ngrok in the background...")
 
-            # Adjust command based on terminal type
-            if self.terminal_app == "gnome-terminal":
-                command = [self.terminal_app, "--", "ngrok", "http", "8080"]
-            # Adjust the command for terminator to run the entire command as a single string.
-            elif self.terminal_app == "terminator":
-                command = [self.terminal_app, "-e", "ngrok http 8080"]
-            else:
-                # Add other terminal configurations if needed
-                raise ValueError(f"Unsupported terminal application:\
-                                  {self.terminal_app}")
-
-            # Start ngrok using the specified terminal application
-            subprocess.run(command, check=True)
-            time.sleep(2)  # Give ngrok a moment to start
+            # Run ngrok directly as a background process using subprocess.Popen
+            ngrok_command = ["ngrok", "http", "8080"]
+            process = subprocess.Popen(
+                ngrok_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            time.sleep(5)  # Give ngrok a moment to start
 
             # Request the ngrok tunnels with a timeout
             response = requests.get(self.ngrok_api_url, timeout=self.timeout)
             response.raise_for_status()  # Raise an exception for bad status codes
 
             tunnels = response.json().get('tunnels', [])
-            # Add this line to debug tunnels
             print(f"Tunnel response: {tunnels}")
             for tunnel in tunnels:
                 if tunnel.get('proto') == 'https':
@@ -82,6 +71,8 @@ class NgrokManager:
             return False
 
         try:
+            print(f"Uploading ngrok URL ({ngrok_url}) to Gateway (\
+                  {gateway_url}) with API Key: {api_key}...")
             response = requests.post(
                 gateway_url,
                 json={'api_key': api_key, 'ngrok_url': ngrok_url},
@@ -89,10 +80,14 @@ class NgrokManager:
                 timeout=self.timeout
             )
             response.raise_for_status()
-            print("Successfully uploaded ngrok URL to gateway.")
+            print("Successfully uploaded ngrok URL to Gateway.")
+            # Confirm Gateway has the new URL
+            confirm_response = requests.get(
+                f"{gateway_url}/{api_key}", headers={'X-API-KEY': api_key}, timeout=self.timeout)
+            print(f"Confirmed Gateway cache update: {confirm_response.json()}")
             return True
         except requests.exceptions.RequestException as e:
-            print(f"Failed to upload ngrok URL to gateway: {str(e)}")
+            print(f"Failed to upload ngrok URL to Gateway: {str(e)}")
             return False
 
     def check_ngrok_status(self) -> bool:

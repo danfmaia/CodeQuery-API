@@ -1,6 +1,7 @@
 # pylint: disable=C0116
 import os
 from unittest import mock
+import responses
 import pytest
 import requests
 from src.ngrok_manager import NgrokManager
@@ -32,34 +33,53 @@ class TestNgrokManager:
         ngrok_url = self.ngrok_manager.start_ngrok()
         assert ngrok_url == "https://abc123.ngrok-free.app"
 
-    @mock.patch('src.ngrok_manager.subprocess.run')
-    def test_start_ngrok_failure(self, mock_subprocess):
-        # Simulate subprocess failure by raising an exception
-        mock_subprocess.side_effect = Exception("Subprocess failed")
+    @mock.patch('src.ngrok_manager.subprocess.Popen')
+    def test_start_ngrok_failure(self, mock_popen):
+        # Simulate subprocess failure by raising an exception when Popen is called
+        mock_popen.side_effect = Exception("Subprocess failed")
 
+        # Create an instance of NgrokManager
+        ngrok_manager = NgrokManager()
+
+        # Use pytest.raises to ensure the exception is correctly raised
         with pytest.raises(Exception, match="Subprocess failed"):
-            self.ngrok_manager.start_ngrok()
+            ngrok_manager.start_ngrok()
 
-    @mock.patch('src.ngrok_manager.requests.post')
-    def test_upload_ngrok_url_success(self, mock_post):
-        # Directly override the attributes in the NgrokManager instance
-        self.ngrok_manager.gateway_upload_url = 'https://your-gateway-url/ngrok-url'
+    @responses.activate
+    def test_upload_ngrok_url_success(self):
+        # Mock the request URL and response.
+        self.ngrok_manager.gateway_upload_url = 'http://mockserver/ngrok-url'
         self.ngrok_manager.api_key = 'your-api-key'
 
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.raise_for_status = mock.Mock()
+        # Mock the POST request to simulate a successful ngrok URL upload.
+        responses.add(
+            responses.POST,
+            'http://mockserver/ngrok-url',
+            json={"status": "success"},
+            status=200
+        )
+
+        # Mock the GET request to simulate a successful confirmation check.
+        responses.add(
+            responses.GET,
+            'http://mockserver/ngrok-url/your-api-key',
+            json={"ngrok_url": "https://abc123.ngrok-free.app"},
+            status=200
+        )
 
         ngrok_url = "https://abc123.ngrok-free.app"
         success = self.ngrok_manager.upload_ngrok_url_to_gateway(ngrok_url)
 
         assert success is True
-        mock_post.assert_called_once_with(
-            'https://your-gateway-url/ngrok-url',
-            json={'api_key': 'your-api-key',
-                  'ngrok_url': ngrok_url},  # Include `api_key`
-            headers={'X-API-KEY': 'your-api-key'},
-            timeout=10
-        )
+
+        # Verify that the POST request was called as expected.
+        assert len(responses.calls) == 2
+        assert responses.calls[0].request.method == 'POST'
+        assert responses.calls[0].request.url == 'http://mockserver/ngrok-url'
+
+        # Verify that the GET request was called as expected.
+        assert responses.calls[1].request.method == 'GET'
+        assert responses.calls[1].request.url == 'http://mockserver/ngrok-url/your-api-key'
 
     @mock.patch('src.ngrok_manager.requests.post')
     def test_upload_ngrok_url_failure(self, mock_post):

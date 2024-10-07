@@ -1,5 +1,3 @@
-# gateway/src/s3_manager.py
-
 import json
 import os
 import boto3

@@ -4,6 +4,8 @@
 
 lsof -i :5001 && ps aux | grep ngrok
 
+curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]+\.ngrok-free\.app'
+
 ## Testing
 
 ### Pytest
@@ -34,7 +36,7 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
 curl -X GET "https://codequery.dev/ngrok-urls/$API_KEY" \
  -H "x-api-key: $API_KEY"
 
-curl -X GET "https://codequery.dev/ngrok-urls/other-valid-key" \
+curl -X GET "https://codequery.dev/ngrok-urls/test-key" \
  -H "x-api-key: $API_KEY"
 
 #### POST /ngrok-urls/
@@ -42,4 +44,30 @@ curl -X GET "https://codequery.dev/ngrok-urls/other-valid-key" \
 curl -X POST "https://codequery.dev/ngrok-urls/" \
  -H "Content-Type: application/json" \
  -H "x-api-key: $API_KEY" \
+ -d '{"api_key": $API_KEY, "ngrok_url": "https://6e95-2804-1b3-7000-829a-c598-42f-2d99-3b97.ngrok-free.app"}'
+
+curl -X POST "https://codequery.dev/ngrok-urls/" \
+ -H "Content-Type: application/json" \
+ -H "x-api-key: $API_KEY" \
  -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
+
+**Access via SSH:**
+
+**Restart service:**
+
+sudo systemctl daemon-reload && sudo systemctl restart codequery_core && sudo systemctl status codequery_core
+
+**Clear journalctl logs && Restart service:**
+
+sudo journalctl --rotate && sudo journalctl --vacuum-time=1s && clear && \
+sudo systemctl daemon-reload && sudo systemctl restart codequery_core && sudo systemctl status codequery_core
+
+**Check service status:**
+
+sudo systemctl status codequery_core
+
+sudo journalctl -u codequery_core -n 50
+
+**Clear journalctl logs**
+
+sudo journalctl --rotate && sudo journalctl --vacuum-time=1s && clear
