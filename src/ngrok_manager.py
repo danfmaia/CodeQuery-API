@@ -24,7 +24,7 @@ class NgrokManager:
     def start_ngrok(self) -> str:
         """Start ngrok in a background process and return the public URL."""
         try:
-            print(f"Starting ngrok in the background...")
+            print("Starting ngrok in the background...")
 
             # Run ngrok using a context manager to properly manage the process resource
             local_port = os.getenv("LOCAL_PORT", "5001")
@@ -123,10 +123,10 @@ class NgrokManager:
                 return self.upload_ngrok_url_to_gateway(ngrok_url)
 
             print("No active ngrok tunnels found. Restarting ngrok...")
-            self.setup_ngrok()  # <== Added this line to call setup_ngrok
+            self.setup_ngrok()
             return False
 
         except requests.exceptions.RequestException:
             print("ngrok is not running. Setting up ngrok...")
-            self.setup_ngrok()  # <== Added this line to call setup_ngrok in exception case
+            self.setup_ngrok()
             return False

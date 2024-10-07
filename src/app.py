@@ -5,7 +5,6 @@ import os
 import logging
 import pathspec
 from flask import Flask, request, jsonify
-from dotenv import load_dotenv
 
 
 from src.ngrok_manager import NgrokManager
@@ -17,7 +16,6 @@ class CodeQueryAPI:
 
     def __init__(self):
         # Initialize environment variables and configurations
-        load_dotenv()
         self.project_path = os.getenv('PROJECT_PATH', './')
         self.agentignore_files = os.getenv('AGENTIGNORE_FILES', '[]')
 
@@ -99,7 +97,7 @@ class CodeQueryAPI:
     def setup_routes(self):
         """Define all the routes for the Flask app."""
 
-        @self.app.route('/health', methods=['GET'])
+        @self.app.route('/', methods=['GET'])
         def health_check():
             """Basic public health check to confirm server status."""
             return jsonify({"status": "Healthy", "message": "CodeQuery Core is running"}), 200
@@ -115,10 +113,13 @@ class CodeQueryAPI:
                 structure = self.file_service.get_directory_structure()
                 self.logger.info("File structure retrieved: %s", structure)
                 return jsonify(structure)
-            except Exception as e:
+            except (FileNotFoundError, IOError, ValueError, KeyError) as e:
+                self.logger.error("File-related or expected error: %s", str(e))
+                return jsonify({"error": "File-related or expected error", "details": str(e)}), 500
+            except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
-                    "Error retrieving file structure: %s", str(e))
-                return jsonify({"error": "Failed to retrieve file structure", "details": str(e)}), 500
+                    "Unexpected error retrieving file structure: %s", str(e))
+                return jsonify({"error": "Unexpected error", "details": str(e)}), 500
 
         @self.app.route('/files/content', methods=['POST'])
         def get_file_content():

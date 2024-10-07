@@ -45,12 +45,12 @@ class GatewayAPI:
         print(f"DEBUG: Retrieving ngrok URL for API key {api_key}...")
         if api_key not in self.ngrok_url_cache:
             self.logger.warning(
-                f"API Key {api_key} not found in cache. Attempting to update from S3...")
+                "API Key %s not found in cache. Attempting to update from S3...", api_key)
             self.update_ngrok_url_from_s3(api_key)
         ngrok_url = self.ngrok_url_cache.get(api_key)
         if not ngrok_url:
-            self.logger.error(f"Failed to update ngrok URL for API key \
-                              {api_key}. Cache state: {self.ngrok_url_cache}")
+            self.logger.error(
+                "Failed to update ngrok URL for %s. Cache state: %s", api_key, self.ngrok_url_cache)
         return ngrok_url
 
     def update_ngrok_url_from_s3(self, api_key: str) -> str:
@@ -60,17 +60,17 @@ class GatewayAPI:
             # Forcefully update the cache with the latest ngrok URL
             self.ngrok_url_cache[api_key] = ngrok_url
             print(f"DEBUG: Updated ngrok URL cache for {api_key}: {ngrok_url}")
-            self.logger.info(f"Updated ngrok URL cache for \
-                             {api_key}: {ngrok_url}")
+            self.logger.info(
+                "Updated ngrok URL cache for %s: %s", api_key, ngrok_url)
             print(f"DEBUG: Current ngrok URL Cache: {self.ngrok_url_cache}")
-            self.logger.info(f"Current ngrok URL Cache state: \
-                             {self.ngrok_url_cache}")
+            self.logger.info(
+                "Current ngrok URL Cache state: %s", self.ngrok_url_cache)
 
             # Manually invalidate the LRU cache to ensure fresh values are used
             self.get_cached_ngrok_url.cache_clear()
         else:
-            self.logger.error(f"Failed to retrieve ngrok URL for \
-                              {api_key} from S3.")
+            self.logger.error(
+                "Failed to retrieve ngrok URL for %s from S3.", api_key)
             raise HTTPException(
                 status_code=404, detail=f"No ngrok URL found for API key {api_key}"
             )
@@ -98,18 +98,18 @@ class GatewayAPI:
             ngrok_url = self.ngrok_url_cache.get(api_key)
 
             # Debug log for inspecting the ngrok URL
-            self.logger.info(f"Retrieved ngrok URL for API key '\
-                             {api_key}': {ngrok_url}")
+            self.logger.info(
+                "Retrieved ngrok URL for API key %s: %s", api_key, ngrok_url)
 
             # Correctly update the request scope with the ngrok URL
             if ngrok_url and ngrok_url.startswith("https://"):
                 # Ensure correct host format
                 ngrok_host = ngrok_url.replace("https://", "").split("/")[0]
                 self.logger.info(
-                    f"Updating request scope for server: {ngrok_host}")
+                    "Updating request scope for server: %s", ngrok_host)
                 request.scope["server"] = (ngrok_host, 443)
             else:
-                self.logger.error(f"Invalid ngrok URL detected: {ngrok_url}")
+                self.logger.error("Invalid ngrok URL detected: %s", ngrok_url)
                 return JSONResponse(status_code=500, content={"detail": "Invalid ngrok URL"})
 
             return await call_next(request)
@@ -143,15 +143,15 @@ class GatewayAPI:
             ngrok_url = self.ngrok_url_cache.get(api_key)
 
             # Debug log to check the value of ngrok_url before use
-            self.logger.info(f"Retrieved ngrok URL for API key \
-                             {api_key}: {ngrok_url}")
+            self.logger.info(
+                "Retrieved ngrok URL for API key '%s': %s", api_key, ngrok_url)
 
             if not ngrok_url or not ngrok_url.startswith("https://"):
                 # If invalid, force a refresh from S3
                 self.update_ngrok_url_from_s3(api_key)
                 ngrok_url = self.ngrok_url_cache.get(api_key)
-                self.logger.info(f"After forced refresh, ngrok URL for '\
-                                 {api_key}' is: {ngrok_url}")
+                self.logger.info(
+                    "After forced refresh, ngrok URL for %s is: %s", api_key, ngrok_url)
 
                 if not ngrok_url or not ngrok_url.startswith("https://"):
                     return JSONResponse(status_code=500, content={"detail": f"Invalid ngrok URL for API key {api_key} even after refresh."})
@@ -175,8 +175,8 @@ class GatewayAPI:
                 return response.json()
             except requests.exceptions.RequestException as e:
                 # Add additional logging to capture the full error
-                self.logger.error(f"Failed request to \
-                                  {ngrok_url}/files/structure with exception: {e}")
+                self.logger.error(
+                    "Failed request to %s/files/structure with exception: %s", ngrok_url, e)
                 raise HTTPException(
                     status_code=500, detail=f"Error retrieving file structure: {str(e)}"
                 ) from e
