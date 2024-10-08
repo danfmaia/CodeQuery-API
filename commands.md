@@ -35,11 +35,11 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
 
 ### Core-side Endpoints (via nGrok)
 
-#### Health check
-
 export NGROK_TEST_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]+\.ngrok-free\.app')
 
-curl -X GET $NGROK_TEST_URL/health
+#### Health check
+
+curl -X GET $NGROK_TEST_URL/
 
 #### GET /files/structure
 

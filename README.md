@@ -166,7 +166,7 @@ package.json
 The **CodeQuery API** can be configured using the following environment variables defined in the `.env` file located in the root directory. Customizing these variables allows you to specify which project and files the API will interact with, providing flexibility for different use cases.
 
 ```plaintext
-PROJECT_PATH="./"                        # Set this to the root path of your project (e.g., "../my-project/")
+PROJECT_PATH="../my-project"             # Set this to the root path of your project
 AGENTIGNORE_FILES=".agentignore,.gitignore"  # Specify custom ignore patterns for file structure queries
 LOCAL_PORT=5001                          # Port number for running the Core component locally
 API_KEY="<Your API Key>"                 # Set your API key for authentication (if used)
