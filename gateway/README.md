@@ -1,119 +1,289 @@
+### New README for CodeQuery Gateway
+
+---
+
 # CodeQuery Gateway
 
 ## Overview
 
-CodeQuery™ Gateway is a FastAPI-based application designed to interact with a codebase by exposing APIs that can fetch file structures and content from remote servers via an ngrok tunnel. The infrastructure for this gateway is deployed on AWS using Terraform, with an EC2 instance running the FastAPI app and a load balancer for handling requests.
+**CodeQuery™ Gateway** is a FastAPI-based service that acts as a secure entry point for managing access to the CodeQuery Core component. It serves as a proxy layer, handling API key validation, ngrok URL management, and secure request forwarding to the Core component. The Gateway is designed to operate within an AWS infrastructure, using S3 for dynamic URL synchronization and an EC2 instance to host the application.
+
+The Gateway is an optional but recommended component for scenarios requiring secure and public access to the Core. Users can set up their own Gateway, using Terraform scripts provided in this repository to deploy a fully configured infrastructure, including EC2 instances, an Application Load Balancer, and DNS setup through Route 53.
 
 ## Features
 
-- **File Structure API**: Retrieve the file structure of the project.
-- **File Content API**: Fetch the content of specified files.
-- **API Key Authentication**: Secure access to the APIs using API keys.
-- **AWS Infrastructure**: Fully configured AWS EC2 instance, security groups, and load balancer via Terraform.
+- **Secure Request Forwarding**: Manages access to the Core component’s `/files/structure` and `/files/content` endpoints using API key validation.
+- **Dynamic ngrok URL Management**: Synchronizes the Core’s ngrok URLs dynamically using S3, allowing seamless updates without downtime.
+- **API Key Authentication**: Ensures secure access to all endpoints using predefined API keys.
+- **Infrastructure as Code**: Fully deployable via Terraform, with modular configurations for EC2, S3, and Load Balancer setups.
 
 ## Prerequisites
 
-- Python 3.x
-- AWS account with the necessary permissions
+- Python 3.8+
+- AWS account with permissions for EC2, S3, and Route 53
 - Terraform installed locally
+- A configured `.env` file with relevant AWS and application variables
 
-## Setup
+## Setup and Deployment
 
-### 1. Clone the Repository
+### 1. Navigate to the Gateway Directory
+
+After cloning the **CodeQuery-API** repository as described in the main README, switch to the `gateway/` folder:
 
 ```bash
-git clone https://github.com/yourusername/CodeQuery-Gateway.git
-cd CodeQuery-Gateway
+cd CodeQuery-API/gateway
 ```
 
-### 2. Install Dependencies
+### 2. Configure Environment Variables
+
+Create a `.env` file in the `gateway/` directory with the following variables:
+
+```bash
+# API keys that will be used for authentication
+API_KEYS=test-key,other-valid-key,O8i5EVRqYI+0OGjPgoXI5Ey2CQzfJ+uIyI7e7yn8j0A=
+
+# SSH and EC2 configuration for managing the remote Gateway server
+EC2_USER="ec2-user"
+EC2_HOST="<Your-EC2-Host-URL>"    # Replace with your EC2 public DNS or IP
+KEY_PATH="./secrets/codequery-keypair.pem"  # Path to your SSH private key file
+```
+
+**Important**: Replace `<Your-EC2-Host-URL>` with your actual EC2 instance’s public DNS (e.g., `ec2-xx-xx-xxx-xxx.region-id.compute.amazonaws.com`). Ensure the `KEY_PATH` points to your SSH private key file used for connecting to the EC2 instance.
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
-
-Create a `.env` file with the following variables:
-
-```bash
-NGROK_URL=<your-ngrok-url>
-API_KEYS=<your-comma-separated-api-keys>
-```
-
 ### 4. Terraform Setup
 
-#### a. Configure `terraform.tfvars`
+#### a. Configure Terraform Variables
 
-Fill out the `terraform.tfvars_template` with your AWS-specific values (region, AMI ID, etc.) and save it as `terraform.tfvars`.
+Fill out the `terraform/terraform.tfvars` file with your AWS-specific values (region, AMI ID, etc.). This configuration will be used for the deployment of the Gateway infrastructure.
 
-#### b. Initialize, Plan and Apply Terraform
+#### b. Initialize, Plan, and Apply Terraform
 
 ```bash
+cd terraform
 terraform init
 terraform plan
 terraform apply
 ```
 
-This will set up the EC2 instance, security groups, load balancer, and related resources on AWS.
+This will provision the EC2 instance, security groups, and other necessary resources.
 
-### 5. Start the Application
+### 5. Start the Application Locally (Optional)
 
-To start or restart the application, use the following commands directly:
-
-#### Refresh the `.env` File:
+You can start the Gateway locally for testing:
 
 ```bash
-scp -i ../secrets/codequery-keypair.pem .env ec2-user@<your-ec2-host>:/home/ec2-user/gateway
+uvicorn gateway:app --reload
 ```
 
-#### Restart the FastAPI Server:
+### 6. Deploying to EC2
 
-```bash
-ssh -i ../secrets/codequery-keypair.pem ec2-user@<your-ec2-host> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
-```
+Once the Gateway infrastructure is set up using Terraform, follow these steps to deploy the application files to the EC2 instance and manage the service:
 
-#### Deploy or Copy Application Files:
+1. **Access the EC2 Instance via SSH**
 
-```bash
-scp -i ../secrets/codequery-keypair.pem app.py ec2-user@<your-ec2-host>:/home/ec2-user/gateway
-scp -i ../secrets/codequery-keypair.pem requirements.txt ec2-user@<your-ec2-host>:/home/ec2-user/gateway
-```
+   Make sure you have the environment variables configured (`EC2_USER`, `EC2_HOST`, and `KEY_PATH`) in your `.env` file.
 
-## Testing
+   ```bash
+   source .env && ssh -i $KEY_PATH $EC2_USER@$EC2_HOST
+   ```
 
-You can start the FastAPI application locally with:
+2. **Upload the Gateway Files to the EC2 Instance**
 
-```bash
-uvicorn app:app --reload
-```
+   Use `rsync` to upload all necessary files:
 
-### File Structure API
+   ```bash
+   rsync -av -e "ssh -i $KEY_PATH" --relative \
+       .env \
+       requirements.txt \
+       gateway.py \
+       src/__init__.py \
+       src/s3_manager.py \
+       conftest.py \
+       tests/test_gateway.py \
+       tests/test_s3_manager.py \
+       $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway/
+   ```
 
-To test the file structure endpoint, make the following request:
+   Alternatively, you can use `scp` to upload individual files:
 
-```bash
-curl -H "X-API-KEY: <your-api-key>" http://<your-ec2-url>:8080/files/structure
-```
+   ```bash
+   scp -i $KEY_PATH gateway.py $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
+   ```
 
-### File Content API
+3. **Restart the FastAPI Service**
 
-To test the file content endpoint, use the following:
+   After uploading the files, restart the FastAPI service:
 
-```bash
-curl -X POST -H "X-API-KEY: <your-api-key>" -d '{"file_paths": ["app.py", "requirements.txt"]}' http://<your-ec2-url>:8080/files/content
-```
+   ```bash
+   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi"
+   ```
 
-## Deployment
+4. **Check the Service Status**
 
-### Restarting the FastAPI Service
+   Verify that the service is running correctly:
 
-You can restart the FastAPI service on the EC2 instance using SSH:
+   ```bash
+   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl status fastapi"
+   ```
 
-```bash
-ssh -i ../secrets/codequery-keypair.pem ec2-user@<your-ec2-url> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
-```
+5. **Retrieve Logs (Optional)**
+
+   To check the latest logs, run:
+
+   ```bash
+   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo journalctl -u fastapi -n 50"
+   ```
+
+   To save the logs to your local machine:
+
+   ```bash
+   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo journalctl -u fastapi -n 50" > logs/journalctl.txt
+   ```
+
+6. **Clear Logs and Restart (If Needed)**
+
+   If you need to clear old logs and restart the service:
+
+   ```bash
+   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo journalctl --rotate && sudo journalctl --vacuum-time=1s && sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi"
+   ```
+
+This ensures the Gateway application is correctly deployed, managed, and monitored on the EC2 instance.
+
+## API Endpoints
+
+### 1. **Health Check**
+
+- **Endpoint**: `/`
+- **Method**: `GET`
+- **Description**: Confirms that the Gateway component is running.
+
+  **Example Request**:
+
+  ```bash
+  curl -X GET https://your-gateway-url.com/
+  ```
+
+  **Example Response**:
+
+  ```json
+  {
+    "message": "FastAPI is running"
+  }
+  ```
+
+### 2. **Retrieve Project Structure**
+
+- **Endpoint**: `/files/structure`
+- **Method**: `GET`
+- **Description**: Retrieves the file structure from the Core component.
+
+  **Example Request**:
+
+  ```bash
+  curl -H "X-API-KEY: <your-api-key>" https://your-gateway-url.com/files/structure
+  ```
+
+  **Example Response**:
+
+  ```json
+  {
+    ".": {
+      "directories": ["src", "tests"],
+      "files": ["README.md", "requirements.txt"]
+    }
+  }
+  ```
+
+### 3. **Retrieve File Content**
+
+- **Endpoint**: `/files/content`
+- **Method**: `POST`
+- **Description**: Fetches the content of specified files from the Core component.
+
+  **Example Request**:
+
+  ```bash
+  curl -X POST -H "X-API-KEY: <your-api-key>" -H "Content-Type: application/json" -d '{
+    "file_paths": ["README.md", "src/app.py"]
+  }' https://your-gateway-url.com/files/content
+  ```
+
+  **Example Response**:
+
+  ```json
+  {
+    "README.md": {
+      "content": "# CodeQuery Project"
+    },
+    "src/app.py": {
+      "content": "# Main application file for the CodeQuery Core API."
+    }
+  }
+  ```
+
+### 4. **ngrok URL Management**
+
+#### Retrieve ngrok URL for an API Key
+
+- **Endpoint**: `/ngrok-urls/{api_key}`
+- **Method**: `GET`
+- **Description**: Retrieves the current ngrok URL associated with a specific API key.
+
+  **Example Request**:
+
+  ```bash
+  curl -X GET https://your-gateway-url.com/ngrok-urls/<your-api-key>
+  ```
+
+  **Example Response**:
+
+  ```json
+  {
+    "api_key": "your-api-key",
+    "ngrok_url": "https://example.ngrok-free.app"
+  }
+  ```
+
+#### Update ngrok URL for an API Key
+
+- **Endpoint**: `/ngrok-urls/`
+- **Method**: `POST`
+- **Description**: Updates the ngrok URL for a given API key.
+
+  **Example Request**:
+
+  ```bash
+  curl -X POST -H "Content-Type: application/json" -d '{
+    "api_key": "your-api-key",
+    "ngrok_url": "https://example.ngrok-free.app"
+  }' https://your-gateway-url.com/ngrok-urls/
+  ```
+
+  **Example Response**:
+
+  ```json
+  {
+    "message": "ngrok URL updated successfully"
+  }
+  ```
+
+## Troubleshooting
+
+- **API Key Issues**: Ensure that the API key is correctly set in your environment variables and the `.env` file on the EC2 instance.
+- **ngrok URL Mismatch**: If the Core’s ngrok URL is not synchronizing correctly, check the S3 bucket for the current values and verify that the Gateway exposed URL is configured properly, and correctly set in `GATEWAY_BASE_URL` (Core-side variable).
+- **Permission Errors**: Verify that the EC2 instance and S3 bucket have the correct IAM roles and permissions.
 
 ## License
 
 This project is licensed under the Apache 2.0 License. See the `LICENSE` file for details.
+
+---
+
+This new README provides a clear and structured overview of the Gateway component, its setup, and usage. Let me know if you'd like to refine any specific sections!

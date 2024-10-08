@@ -12,7 +12,28 @@ curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]
 
 clear && pytest tests/ | tee tests/results.txt
 
-### Core-side Endpoints
+### Core-side Endpoints (Localhost)
+
+> Simpler approach, no ngrok or gateway dependency.
+
+#### Health check (Localhost)
+
+curl -X GET http://127.0.0.1:$LOCAL_PORT/
+
+#### GET /files/structure (Localhost)
+
+curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
+
+#### POST /files/content (Localhost)
+
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+"file_paths": [
+"src/app.py",
+"src/ngrok_manager.py"
+]
+}' http://127.0.0.1:$LOCAL_PORT/files/content
+
+### Core-side Endpoints (via nGrok)
 
 #### Health check
 
@@ -69,27 +90,6 @@ curl -X POST "https://codequery.dev/ngrok-urls/" \
  -H "Content-Type: application/json" \
  -H "x-api-key: $API_KEY" \
  -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
-
-### Localhost Testing
-
-> Simpler approach, no ngrok or gateway dependency.
-
-#### Health check (Localhost)
-
-curl -X GET http://127.0.0.1:$LOCAL_PORT/
-
-#### GET /files/structure (Localhost)
-
-curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
-
-#### POST /files/content (Localhost)
-
-curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
-"file_paths": [
-"src/app.py",
-"src/ngrok_manager.py"
-]
-}' http://127.0.0.1:$LOCAL_PORT/files/content
 
 ## Service Management
 

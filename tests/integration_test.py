@@ -4,15 +4,17 @@ import time
 import requests
 from dotenv import load_dotenv
 
+# TODO: Improve this test to make it rougher, including calls for other endpoints.
+
 # Load environment variables from .env file
 load_dotenv()
 
 # Configuration from environment variables
 API_KEY = os.getenv("API_KEY")
 GATEWAY_BASE_URL = os.getenv("GATEWAY_BASE_URL")
-GATEWAY_UPLOAD_URL = os.getenv("GATEWAY_UPLOAD_URL")
+GATEWAY_NGROK_URL = os.getenv("GATEWAY_BASE_URL") + '/ngrok-urls/'
 # Extract base URL from the upload endpoint
-NGROK_URL_ENDPOINT = f"{GATEWAY_UPLOAD_URL}{API_KEY}"
+NGROK_URL_ENDPOINT = f"{GATEWAY_NGROK_URL}{API_KEY}"
 FILES_STRUCTURE_ENDPOINT = f"{GATEWAY_BASE_URL}/files/structure"
 LOCAL_SCRIPT_COMMAND = ["python", "run.py"]
 

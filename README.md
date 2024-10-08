@@ -2,18 +2,18 @@
 
 ![CodeQueryGPT cover artwork](./assets/social_CodeQueryAPI.png)
 
-**CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, LLM agents\* can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are probed, making it an invaluable tool for AI-driven code analysis and development.
+**CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, LLM agents\* can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are probed, making it an invaluable tool for AI-driven code analysis and development.
 
-\* An LLM agent is the decision-making component of an AI assistant. Read more about about agents [in this article](https://python.langchain.com/v0.1/docs/modules/agents/). (You don't necessarily need to know about them to use CodeQuery, but a bit of knowledge is beneficial.)
+\* An LLM agent is the decision-making component of an AI assistant. Read more about agents [in this article](https://python.langchain.com/v0.1/docs/modules/agents/).
 
 🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
 
 ## Features
 
 - **Designed for AI Assistants**: This API was specifically designed to integrate with AI assistants such as custom GPTs, providing them with efficient access to project file structures and contents.
-- **Retrieve Project Structure**: Get a detailed view of the project’s directories and files, excluding those specified in the `.agentignore` file.
+- **Retrieve Project Structure**: Get a detailed view of the project’s directories and files.
 - **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent paths.
-- **Custom Ignore Patterns**: Utilize `.agentignore` for specifying which files or directories to exclude from the structure retrieval.
+- **Custom Ignore Patterns**: Utilize `.agentignore` and/or `.gitignore` for specifying which files or directories to exclude from the structure retrieval.
 
 ## API Endpoints
 
@@ -21,22 +21,40 @@
 
 - **Endpoint**: `/files/structure`
 - **Method**: `GET`
-- **Description**: Retrieves the project directory structure, respecting the ignore patterns in `.agentignore`.
+- **Description**: Retrieves the directory structure of the project, respecting the ignore patterns in `.agentignore`. This is useful for tools that need to understand the file organization, such as code editors or static analysis tools.
+
 - **Response Example**:
+
   ```json
   {
     ".": {
-      "directories": ["src", "tests"],
-      "files": [".agentignore", "openapi.json"]
+      "directories": ["backend", "frontend", "config"],
+      "files": [".env", "README.md"]
     },
-    "src": {
-      "directories": [],
-      "files": ["app.py"]
+    "backend": {
+      "directories": ["controllers", "models", "services"],
+      "files": ["app.py", "database.py"]
     },
-    "tests": {
+    "frontend": {
+      "directories": ["components", "pages"],
+      "files": ["index.html", "app.js"]
+    },
+    "config": {
       "directories": [],
-      "files": ["test_app.py"]
+      "files": ["settings.yaml", "logging.conf"]
     }
+  }
+  ```
+
+- **Error Scenarios**:
+
+  - **500 Internal Server Error**: If there’s a failure in reading the directory structure, such as permission issues or corrupted files, an internal error response will be returned.
+
+  **Example Error Response**:
+
+  ```json
+  {
+    "error": "Failed to retrieve directory structure: [Detailed error message]"
   }
   ```
 
@@ -44,30 +62,72 @@
 
 - **Endpoint**: `/files/content`
 - **Method**: `POST`
-- **Description**: Retrieves the content of specified files.
+- **Description**: Retrieves the content of specified files. Useful for directly accessing specific source files or configuration files.
+
 - **Request Body**:
+
   ```json
   {
-    "file_paths": ["app.py", "tests/test_app.py"]
+    "file_paths": ["backend/app.py", "frontend/app.js"]
   }
   ```
+
 - **Response Example**:
 
   ```json
   {
-    "app.py": {
-      "content": "# Content of app.py file..."
+    "backend/app.py": {
+      "content": "# Main application file\nfrom flask import Flask\napp = Flask(__name__)\n\n@app.route('/')\ndef index():\n    return 'Hello, World!'"
     },
-    "tests/test_app.py": {
-      "content": "# Content of test_app.py file..."
+    "frontend/app.js": {
+      "content": "// Frontend application logic\nimport React from 'react';\nfunction App() {\n    return (<div>Hello, World!</div>);\n}"
     }
   }
   ```
 
-- **Error Example (File Not Found)**:
+- **Error Scenarios**:
+
+  - **400 Bad Request**: If no file paths are provided in the request body.
+
+  **Example Error Response**:
+
+  ```json
+  {
+    "error": "No file paths provided in the request."
+  }
+  ```
+
+  - **404 Not Found**: If all the requested file paths do not exist or are missing.
+
+  **Example Error Response**:
+
   ```json
   {
     "error": "All requested files are missing"
+  }
+  ```
+
+  - **422 Unprocessable Entity**: If a directory is specified instead of a file.
+
+  **Example Error Response**:
+
+  ```json
+  {
+    "frontend/components": {
+      "error": "Cannot read directory: frontend/components"
+    }
+  }
+  ```
+
+  - **500 Internal Server Error**: If there’s a failure in reading a file due to permissions, encoding issues, or other OS-level errors.
+
+  **Example Error Response**:
+
+  ```json
+  {
+    "backend/app.py": {
+      "error": "Error reading file: [Detailed error message]"
+    }
   }
   ```
 
@@ -103,92 +163,181 @@ package.json
 
 ## Environment Variables
 
-You can and should customize the **CodeQuery API** using environment variables defined in a `.env` file.
+The **CodeQuery API** can be configured using the following environment variables defined in the `.env` file located in the root directory. Customizing these variables allows you to specify which project and files the API will interact with, providing flexibility for different use cases.
 
-- **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
-- **`AGENTIGNORE_FILE_1`**: Change this if you want another file (such as `.gitignore`) to determine which files are to be ignored for the `/files/structure` endpoint. Note that those files can still be accessed by the `/files/content/` endpoint.
+```plaintext
+PROJECT_PATH="./"                        # Set this to the root path of your project (e.g., "../my-project/")
+AGENTIGNORE_FILES=".agentignore,.gitignore"  # Specify custom ignore patterns for file structure queries
+LOCAL_PORT=5001                          # Port number for running the Core component locally
+API_KEY="<Your API Key>"                 # Set your API key for authentication (if used)
+GATEWAY_BASE_URL="<Your Gateway URL>"    # Public URL for the Gateway component (if used)
 
-Example `.env` file:
-
+NGROK_API_URL="http://localhost:4040/api/tunnels"  # Ngrok API URL for querying tunnel status
+TIMEOUT=10                               # Request timeout in seconds
 ```
-PROJECT_PATH=../your-project/
-AGENTIGNORE_FILE_1=.agentignore
+
+### Key Variables to Customize
+
+1. **`PROJECT_PATH`**: Set this variable to the root path of the project you want the CodeQuery API to work with. This path should point to the directory where your project is located (e.g., `../my-project/`). By default, it is set to `"./"`, which points to the current folder, usually the CodeQuery project itself.
+2. **`AGENTIGNORE_FILES`**: Use this variable to customize which files and directories should be ignored when querying the project structure. You can specify multiple ignore files separated by commas (e.g., `.agentignore,.gitignore,.dockerignore`).
+
+3. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
+
+4. **`API_KEY` (if using Gateway)**: Set your personal API key to authenticate requests to the Core and Gateway components.
+
+5. **`GATEWAY_BASE_URL` (if using Gateway)**: Set this to the public URL of your Gateway component if using Gateway for secure access. This variable can also be left empty if not applicable.
+
+After defining the environment variables, ensure they are loaded:
+
+```bash
+source .env
 ```
 
-## Installation and Setup
+## Installation and Exposure
 
 ### Prerequisites
 
 - Python 3.8+ (3.12 recommended)
 - Flask
 
-### Steps
+### Installation Steps
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/CodeQuery-API.git
+   git clone https://github.com/danfmaia/CodeQuery-API.git
    cd CodeQuery-API
    ```
 
 2. Install dependencies:
 
    ```bash
-   sudo apt-get install jq
    pip install -r requirements.txt
    ```
 
-3. Activate local environment && Run the Flask application:
+3. Activate local environment:
 
    ```bash
-   conda activate venv/ && python app.py
+   conda activate venv/
    ```
 
-4. The API will be available at `http://localhost:5001`.
+4. Choose one of the following exposure options to make the Core component accessible:
 
-## Testing
+### Exposure Options
 
-Before testing the public endpoints, ensure that the core API tests located in the `tests/` directory are passing. Running these tests ensures the core functionality is working as expected.
+#### 1. **Using the Gateway Component**
 
-### Running Core API Tests
+- **Description**: This is the recommended option if you need secure access management and dynamic URL synchronization. The Gateway component acts as an intermediary, handling API key validation, ngrok URL synchronization, and request forwarding to the Core component.
+- **Command**:
+  ```bash
+  python run.py
+  ```
+- **Use Case**: Ideal for secure, managed access and when operating in environments where dynamic URL management is needed.
 
-1. Install `pytest` if you haven’t already:
+#### 2. **Using a Paid ngrok URL**
 
-   ```bash
-   conda activate venv/ && pip install pytest
-   ```
+- **Description**: With a paid ngrok plan, you can set up a permanent public URL, simplifying external access without the Gateway component. This approach only requires running the Core locally and using the ngrok URL for remote access.
+- **Command**:
+  ```bash
+  python run_local.py
+  ```
+- **Use Case**: Suitable for users who prefer a straightforward setup using ngrok but need a permanent URL for consistent access.
 
-2. Run the tests:
+#### 3. **Setting Up a Self-Hosted Server**
 
-   ```bash
-   export PYTHONPATH="$PYTHONPATH:/home/danfmaia/_repos/CodeQuery/CodeQuery-API" && pytest tests/
-   ```
+- **Description**: For users with a static IP address or a home server, you can host the Core directly using your ISP’s services. This setup avoids the need for ngrok or the Gateway but may require configuring your router and securing the connection with SSL/TLS certificates.
+- **Command**:
+  ```bash
+  python run_local.py
+  ```
+- **Steps**:
+  1. **Check Static IP Availability**: Verify if your ISP offers a static IP address.
+  2. **Port Forwarding**: Configure your router to forward traffic on a specific port (e.g., `5001`) to the local machine running CodeQuery Core.
+  3. **Domain Setup**: Consider using a custom domain to access your server.
+  4. **SSL/TLS Configuration**: Use services like Let’s Encrypt to secure your server.
 
-   This will execute all tests in the `tests/` directory and ensure the core API is functioning correctly.
+## Testing the CodeQuery API
 
-Once the core tests have passed, you can proceed to test the public endpoints.
+This section outlines the environment variable setup and key testing commands for the Core component, including running unit tests and troubleshooting integration issues.
 
-### Testing the Public API (Gateway)
+### Environment Variable Setup for Testing
 
-You can use **curl** commands or Postman to interact with the public API.
+Before running any tests, make sure to configure the necessary environment variables in the `.env` file. Here’s the complete `.env` file template:
 
-#### Testing the Project Structure Retrieval
+```plaintext
+PROJECT_PATH="./"
+AGENTIGNORE_FILES=".agentignore,.gitignore"
+LOCAL_PORT=<YOUR_LOCAL_PORT>          # Set to your preferred port, e.g., 5001
+API_KEY="<YOUR_API_KEY>"              # Replace with your personal API key for testing
+GATEWAY_BASE_URL="<YOUR_GATEWAY_URL>" # Set to your Gateway's public URL if applicable
+
+NGROK_API_URL="http://localhost:4040/api/tunnels"
+TIMEOUT=10
+```
+
+**Key Variables for Testing**:
+
+1. **`API_KEY`**: The API key to authenticate requests. Set this to your personal API key.
+2. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
+3. **`GATEWAY_BASE_URL`**: The base URL for the Gateway component if testing with the Gateway (e.g., `https://codequery.dev` or your custom Gateway URL).
+
+After setting these variables, run:
 
 ```bash
-curl -H "X-API-KEY: <your-api-key>" http://localhost:5001/files/structure
+source .env
 ```
 
-#### Testing File Content Retrieval
+### 1. Testing the Core Component Locally
+
+If you’re running the Core component locally (e.g., using `run_local.py`), follow these steps:
+
+#### Health Check (Localhost)
 
 ```bash
-curl -X POST -H "X-API-KEY: <your-api-key>" -d '{"file_paths": ["app.py", "requirements.txt"]}' http://localhost:5001/files/content
+curl -X GET http://127.0.0.1:$LOCAL_PORT/
 ```
 
-You can modify the request body to include different file paths and test how the API handles file retrieval and error scenarios.
+#### Retrieve Project Structure (Localhost)
 
+```bash
+curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
 ```
 
-## Creating your own custom GPT for using this API
+#### Retrieve File Contents (Localhost)
+
+```bash
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+  "file_paths": [
+    "src/app.py",
+    "src/ngrok_manager.py"
+  ]
+}' http://127.0.0.1:$LOCAL_PORT/files/content
+```
+
+### 2. Running Integration Tests
+
+To verify the integration between the Core and Gateway components, use the `tests/integration_test.py` file. This test ensures that the Gateway can correctly interact with the Core API, handling ngrok URL synchronization and request forwarding.
+
+1. **Run the Integration Test**:
+
+   ```bash
+   pytest tests/integration_test.py
+   ```
+
+   This will execute the integration test and provide a summary of the results, validating the communication between the Gateway and Core components.
+
+### 3. Troubleshooting Common Issues
+
+- **Ngrok URL Mismatch**: If you encounter issues with ngrok URL synchronization between the Core and Gateway, ensure that:
+
+  - The `GATEWAY_UPLOAD_URL` is correctly set in your `.env` file.
+  - The Gateway component is reachable and the API key is valid.
+
+- **Missing Environment Variables**: Ensure all necessary environment variables (`PROJECT_PATH`, `API_KEY`, etc.) are defined in your `.env` file.
+
+For more detailed troubleshooting steps, refer to `gateway/README.md` if you're encountering Gateway-specific issues.
+
+## CodeQueryGPT – Creating your own custom GPT for using this API
 
 This API was designed to be used by custom AI assistants. If you are a ChatGPT Premium user, you can create a custom GPT using the **ChatGPT Builder**.
 
@@ -213,13 +362,12 @@ Conversation Starters:
 - I need assistance in developing a new feature.
 - Query the main files and help me refactor them for better performance.
 
-````
-
-You can of course tweak some of the settings above.
+```
 
 4. Once the GPT is created, go to the **Configure** tab.
-5. Enable the **"Code Interpreter & Data Analysis"** option.
-6. Create a new **Action** by providing the following **OpenAPI schema**:
+5. [Optional] Customize the GPT initialization settings as needed.
+6. Enable the **"Code Interpreter & Data Analysis"** option.
+7. Create a new **Action** by providing the following **OpenAPI schema**:
 
 ```json
 {
@@ -231,7 +379,7 @@ You can of course tweak some of the settings above.
   },
   "servers": [
     {
-      "url": "<YOUR-GENERATED-NGROK-URL>"
+      "url": "<YOUR-PUBLIC-URL>"
     }
   ],
   "paths": {
@@ -360,9 +508,11 @@ You can of course tweak some of the settings above.
     }
   }
 }
-````
+```
 
-7. Make sure to update the `"servers.url"` field with your **ngrok** HTTPS URL, which you generate by running `ngrok http 5001` while the API is running locally.
+8. Replace `<YOUR-PUBLIC-URL>` with the URL of your chosen exposure option
+
+   Refer to the [Environment Variable Setup for Testing](#environment-variable-setup-for-testing) section for details on configuring the Core component's URL using ngrok, Gateway, or other options.
 
 ## Privacy
 

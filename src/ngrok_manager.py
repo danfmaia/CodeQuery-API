@@ -17,7 +17,7 @@ class NgrokManager:
     def refresh_environment_variables(self) -> None:
         """Refresh class attributes from the environment variables."""
         self.ngrok_api_url = os.getenv("NGROK_API_URL")
-        self.gateway_upload_url = os.getenv("GATEWAY_UPLOAD_URL")
+        self.gateway_ngrok_url = os.getenv("GATEWAY_URL") + '/ngrok-urls/'
         self.api_key = os.getenv("API_KEY")
         self.timeout = int(os.getenv("TIMEOUT", "10"))
 
@@ -64,11 +64,11 @@ class NgrokManager:
 
     def upload_ngrok_url_to_gateway(self, ngrok_url: str) -> bool:
         """Upload the ngrok URL to the gateway server."""
-        gateway_url = self.gateway_upload_url
+        gateway_url = self.gateway_ngrok_url
         api_key = self.api_key
 
         if not gateway_url or not api_key:
-            print(f"Missing GATEWAY_UPLOAD_URL (\
+            print(f"Missing GATEWAY_NGROK_URL (\
                   {gateway_url}) or API_KEY ({api_key})")
             return False
 
@@ -110,11 +110,11 @@ class NgrokManager:
                 ngrok_url = tunnels[0].get("public_url")
                 print(f"ngrok is running: {ngrok_url}")
 
-                if self.gateway_upload_url is None:
-                    print("Warning: GATEWAY_UPLOAD_URL is not set.")
+                if self.gateway_ngrok_url is None:
+                    print("Warning: GATEWAY_UPLOAD_URL is not correctly built.")
                     return False
 
-                if ngrok_url.strip().lower() == self.gateway_upload_url.strip().lower():
+                if ngrok_url.strip().lower() == self.gateway_ngrok_url.strip().lower():
                     print("ngrok URL is already synchronized with the gateway.")
                     return True
 

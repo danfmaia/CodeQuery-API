@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "<YOUR-GENERATED-NGROK-URL>"
+      "url": "<YOUR-PUBLIC-URL>"
     }
   ],
   "paths": {

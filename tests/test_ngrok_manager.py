@@ -48,7 +48,7 @@ class TestNgrokManager:
     @responses.activate
     def test_upload_ngrok_url_success(self):
         # Mock the request URL and response.
-        self.ngrok_manager.gateway_upload_url = 'http://mockserver/ngrok-url'
+        self.ngrok_manager.gateway_ngrok_url = 'http://mockserver/ngrok-url'
         self.ngrok_manager.api_key = 'your-api-key'
 
         # Mock the POST request to simulate a successful ngrok URL upload.
@@ -84,7 +84,7 @@ class TestNgrokManager:
     @mock.patch('src.ngrok_manager.requests.post')
     def test_upload_ngrok_url_failure(self, mock_post):
         # Directly override the attributes in the NgrokManager instance
-        self.ngrok_manager.gateway_upload_url = 'https://your-gateway-url/ngrok-url'
+        self.ngrok_manager.gateway_ngrok_url = 'https://your-gateway-url/ngrok-url'
         self.ngrok_manager.api_key = 'your-api-key'
 
         mock_post.side_effect = requests.exceptions.RequestException(
