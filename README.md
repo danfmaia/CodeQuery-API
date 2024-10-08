@@ -6,7 +6,7 @@
 
 \* An LLM agent is the decision-making component of an AI assistant. Read more about agents [in this article](https://python.langchain.com/v0.1/docs/modules/agents/).
 
-🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
+🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages! For more details on how the CodeQuery API has been applied, see the [Cases](#cases) section.
 
 ## Features
 
@@ -513,6 +513,18 @@ Conversation Starters:
 8. Replace `<YOUR-PUBLIC-URL>` with the URL of your chosen exposure option
 
    Refer to the [Environment Variable Setup for Testing](#environment-variable-setup-for-testing) section for details on configuring the Core component's URL using ngrok, Gateway, or other options.
+
+## Cases
+
+### 1. CoreQueryAPI (and CodeQueryGPT)
+
+The **CoreQueryAPI** is the first use case of the CodeQuery API, and it’s the project you’re currently exploring. It serves as a powerful development tool, integrating with AI assistants (such as the [**CodeQueryGPT**](#codequerygpt--creating-your-own-custom-gpt-for-using-this-api)) to support developers by providing a structured way to query project files, understand code dependencies, and interact with large codebases. This project was developed using a **Test-Driven Development (TDD)** approach to ensure the correctness of the AI-generated code.
+
+### 2. SkillChrono
+
+[SkillChrono](https://github.com/danfmaia/SkillChrono) is a Python-based tool designed to help developers organize and visualize their technical skills across various projects. It processes structured data, aggregates experience per technology, and generates markdown reports sorted both alphabetically and by experience duration. SkillChrono was also built using a **TDD** approach, and the **CodeQuery API** was integral to its development, supporting everything from feature implementation to documentation generation.
+
+For more details, see the [SkillChrono repository](https://github.com/danfmaia/SkillChrono).
 
 ## Privacy
 
