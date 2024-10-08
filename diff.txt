@@ -1,0 +1,965 @@
+diff --git a/README.md b/README.md
+index 0ee5ba0..687bb43 100644
+--- a/README.md
++++ b/README.md
+@@ -2,18 +2,18 @@
+ 
+ ![CodeQueryGPT cover artwork](./assets/social_CodeQueryAPI.png)
+ 
+-**CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, LLM agents\* can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns via `.agentignore`, the API ensures that only relevant files are probed, making it an invaluable tool for AI-driven code analysis and development.
++**CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, LLM agents\* can effortlessly query project structures and retrieve up-to-date file contents, helping developers efficiently explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are probed, making it an invaluable tool for AI-driven code analysis and development.
+ 
+-\* An LLM agent is the decision-making component of an AI assistant. Read more about about agents [in this article](https://python.langchain.com/v0.1/docs/modules/agents/). (You don't necessarily need to know about them to use CodeQuery, but a bit of knowledge is beneficial.)
++\* An LLM agent is the decision-making component of an AI assistant. Read more about agents [in this article](https://python.langchain.com/v0.1/docs/modules/agents/).
+ 
+ 🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages!
+ 
+ ## Features
+ 
+ - **Designed for AI Assistants**: This API was specifically designed to integrate with AI assistants such as custom GPTs, providing them with efficient access to project file structures and contents.
+-- **Retrieve Project Structure**: Get a detailed view of the project’s directories and files, excluding those specified in the `.agentignore` file.
++- **Retrieve Project Structure**: Get a detailed view of the project’s directories and files.
+ - **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent paths.
+-- **Custom Ignore Patterns**: Utilize `.agentignore` for specifying which files or directories to exclude from the structure retrieval.
++- **Custom Ignore Patterns**: Utilize `.agentignore` and/or `.gitignore` for specifying which files or directories to exclude from the structure retrieval.
+ 
+ ## API Endpoints
+ 
+@@ -21,56 +21,116 @@
+ 
+ - **Endpoint**: `/files/structure`
+ - **Method**: `GET`
+-- **Description**: Retrieves the project directory structure, respecting the ignore patterns in `.agentignore`.
++- **Description**: Retrieves the directory structure of the project, respecting the ignore patterns in `.agentignore`. This is useful for tools that need to understand the file organization, such as code editors or static analysis tools.
++
+ - **Response Example**:
++
+   ```json
+   {
+     ".": {
+-      "directories": ["src", "tests"],
+-      "files": [".agentignore", "openapi.json"]
++      "directories": ["backend", "frontend", "config"],
++      "files": [".env", "README.md"]
+     },
+-    "src": {
+-      "directories": [],
+-      "files": ["app.py"]
++    "backend": {
++      "directories": ["controllers", "models", "services"],
++      "files": ["app.py", "database.py"]
+     },
+-    "tests": {
++    "frontend": {
++      "directories": ["components", "pages"],
++      "files": ["index.html", "app.js"]
++    },
++    "config": {
+       "directories": [],
+-      "files": ["test_app.py"]
++      "files": ["settings.yaml", "logging.conf"]
+     }
+   }
+   ```
+ 
++- **Error Scenarios**:
++
++  - **500 Internal Server Error**: If there’s a failure in reading the directory structure, such as permission issues or corrupted files, an internal error response will be returned.
++
++  **Example Error Response**:
++
++  ```json
++  {
++    "error": "Failed to retrieve directory structure: [Detailed error message]"
++  }
++  ```
++
+ ### 2. **Retrieve File Contents**
+ 
+ - **Endpoint**: `/files/content`
+ - **Method**: `POST`
+-- **Description**: Retrieves the content of specified files.
++- **Description**: Retrieves the content of specified files. Useful for directly accessing specific source files or configuration files.
++
+ - **Request Body**:
++
+   ```json
+   {
+-    "file_paths": ["app.py", "tests/test_app.py"]
++    "file_paths": ["backend/app.py", "frontend/app.js"]
+   }
+   ```
++
+ - **Response Example**:
+ 
+   ```json
+   {
+-    "app.py": {
+-      "content": "# Content of app.py file..."
++    "backend/app.py": {
++      "content": "# Main application file\nfrom flask import Flask\napp = Flask(__name__)\n\n@app.route('/')\ndef index():\n    return 'Hello, World!'"
+     },
+-    "tests/test_app.py": {
+-      "content": "# Content of test_app.py file..."
++    "frontend/app.js": {
++      "content": "// Frontend application logic\nimport React from 'react';\nfunction App() {\n    return (<div>Hello, World!</div>);\n}"
+     }
+   }
+   ```
+ 
+-- **Error Example (File Not Found)**:
++- **Error Scenarios**:
++
++  - **400 Bad Request**: If no file paths are provided in the request body.
++
++  **Example Error Response**:
++
++  ```json
++  {
++    "error": "No file paths provided in the request."
++  }
++  ```
++
++  - **404 Not Found**: If all the requested file paths do not exist or are missing.
++
++  **Example Error Response**:
++
+   ```json
+   {
+     "error": "All requested files are missing"
+   }
+   ```
+ 
++  - **422 Unprocessable Entity**: If a directory is specified instead of a file.
++
++  **Example Error Response**:
++
++  ```json
++  {
++    "frontend/components": {
++      "error": "Cannot read directory: frontend/components"
++    }
++  }
++  ```
++
++  - **500 Internal Server Error**: If there’s a failure in reading a file due to permissions, encoding issues, or other OS-level errors.
++
++  **Example Error Response**:
++
++  ```json
++  {
++    "backend/app.py": {
++      "error": "Error reading file: [Detailed error message]"
++    }
++  }
++  ```
++
+ ## .agentignore File
+ 
+ The `.agentignore` file works similarly to `.gitignore`, allowing you to specify files and directories that should be excluded from file structure queries (`/files/structure` endpoint).
+@@ -103,92 +163,181 @@ package.json
+ 
+ ## Environment Variables
+ 
+-You can and should customize the **CodeQuery API** using environment variables defined in a `.env` file.
++The **CodeQuery API** can be configured using the following environment variables defined in the `.env` file located in the root directory. Customizing these variables allows you to specify which project and files the API will interact with, providing flexibility for different use cases.
+ 
+-- **`PROJECT_PATH`**: Set this variable to the relative path of the project you are working on.
+-- **`AGENTIGNORE_FILE_1`**: Change this if you want another file (such as `.gitignore`) to determine which files are to be ignored for the `/files/structure` endpoint. Note that those files can still be accessed by the `/files/content/` endpoint.
++```plaintext
++PROJECT_PATH="./"                        # Set this to the root path of your project (e.g., "../my-project/")
++AGENTIGNORE_FILES=".agentignore,.gitignore"  # Specify custom ignore patterns for file structure queries
++LOCAL_PORT=5001                          # Port number for running the Core component locally
++API_KEY="<Your API Key>"                 # Set your API key for authentication (if used)
++GATEWAY_BASE_URL="<Your Gateway URL>"    # Public URL for the Gateway component (if used)
++
++NGROK_API_URL="http://localhost:4040/api/tunnels"  # Ngrok API URL for querying tunnel status
++TIMEOUT=10                               # Request timeout in seconds
++```
+ 
+-Example `.env` file:
++### Key Variables to Customize
+ 
+-```
+-PROJECT_PATH=../your-project/
+-AGENTIGNORE_FILE_1=.agentignore
++1. **`PROJECT_PATH`**: Set this variable to the root path of the project you want the CodeQuery API to work with. This path should point to the directory where your project is located (e.g., `../my-project/`). By default, it is set to `"./"`, which points to the current folder, usually the CodeQuery project itself.
++2. **`AGENTIGNORE_FILES`**: Use this variable to customize which files and directories should be ignored when querying the project structure. You can specify multiple ignore files separated by commas (e.g., `.agentignore,.gitignore,.dockerignore`).
++
++3. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
++
++4. **`API_KEY` (if using Gateway)**: Set your personal API key to authenticate requests to the Core and Gateway components.
++
++5. **`GATEWAY_BASE_URL` (if using Gateway)**: Set this to the public URL of your Gateway component if using Gateway for secure access. This variable can also be left empty if not applicable.
++
++After defining the environment variables, ensure they are loaded:
++
++```bash
++source .env
+ ```
+ 
+-## Installation and Setup
++## Installation and Exposure
+ 
+ ### Prerequisites
+ 
+ - Python 3.8+ (3.12 recommended)
+ - Flask
+ 
+-### Steps
++### Installation Steps
+ 
+ 1. Clone the repository:
+ 
+    ```bash
+-   git clone https://github.com/your-username/CodeQuery-API.git
++   git clone https://github.com/danfmaia/CodeQuery-API.git
+    cd CodeQuery-API
+    ```
+ 
+ 2. Install dependencies:
+ 
+    ```bash
+-   sudo apt-get install jq
+    pip install -r requirements.txt
+    ```
+ 
+-3. Activate local environment && Run the Flask application:
++3. Activate local environment:
+ 
+    ```bash
+-   conda activate venv/ && python app.py
++   conda activate venv/
+    ```
+ 
+-4. The API will be available at `http://localhost:5001`.
++4. Choose one of the following exposure options to make the Core component accessible:
+ 
+-## Testing
++### Exposure Options
+ 
+-Before testing the public endpoints, ensure that the core API tests located in the `tests/` directory are passing. Running these tests ensures the core functionality is working as expected.
++#### 1. **Using the Gateway Component**
+ 
+-### Running Core API Tests
++- **Description**: This is the recommended option if you need secure access management and dynamic URL synchronization. The Gateway component acts as an intermediary, handling API key validation, ngrok URL synchronization, and request forwarding to the Core component.
++- **Command**:
++  ```bash
++  python run.py
++  ```
++- **Use Case**: Ideal for secure, managed access and when operating in environments where dynamic URL management is needed.
+ 
+-1. Install `pytest` if you haven’t already:
++#### 2. **Using a Paid ngrok URL**
+ 
+-   ```bash
+-   conda activate venv/ && pip install pytest
+-   ```
++- **Description**: With a paid ngrok plan, you can set up a permanent public URL, simplifying external access without the Gateway component. This approach only requires running the Core locally and using the ngrok URL for remote access.
++- **Command**:
++  ```bash
++  python run_local.py
++  ```
++- **Use Case**: Suitable for users who prefer a straightforward setup using ngrok but need a permanent URL for consistent access.
+ 
+-2. Run the tests:
++#### 3. **Setting Up a Self-Hosted Server**
+ 
+-   ```bash
+-   export PYTHONPATH="$PYTHONPATH:/home/danfmaia/_repos/CodeQuery/CodeQuery-API" && pytest tests/
+-   ```
++- **Description**: For users with a static IP address or a home server, you can host the Core directly using your ISP’s services. This setup avoids the need for ngrok or the Gateway but may require configuring your router and securing the connection with SSL/TLS certificates.
++- **Command**:
++  ```bash
++  python run_local.py
++  ```
++- **Steps**:
++  1. **Check Static IP Availability**: Verify if your ISP offers a static IP address.
++  2. **Port Forwarding**: Configure your router to forward traffic on a specific port (e.g., `5001`) to the local machine running CodeQuery Core.
++  3. **Domain Setup**: Consider using a custom domain to access your server.
++  4. **SSL/TLS Configuration**: Use services like Let’s Encrypt to secure your server.
++
++## Testing the CodeQuery API
++
++This section outlines the environment variable setup and key testing commands for the Core component, including running unit tests and troubleshooting integration issues.
++
++### Environment Variable Setup for Testing
++
++Before running any tests, make sure to configure the necessary environment variables in the `.env` file. Here’s the complete `.env` file template:
++
++```plaintext
++PROJECT_PATH="./"
++AGENTIGNORE_FILES=".agentignore,.gitignore"
++LOCAL_PORT=<YOUR_LOCAL_PORT>          # Set to your preferred port, e.g., 5001
++API_KEY="<YOUR_API_KEY>"              # Replace with your personal API key for testing
++GATEWAY_BASE_URL="<YOUR_GATEWAY_URL>" # Set to your Gateway's public URL if applicable
++
++NGROK_API_URL="http://localhost:4040/api/tunnels"
++TIMEOUT=10
++```
+ 
+-   This will execute all tests in the `tests/` directory and ensure the core API is functioning correctly.
++**Key Variables for Testing**:
+ 
+-Once the core tests have passed, you can proceed to test the public endpoints.
++1. **`API_KEY`**: The API key to authenticate requests. Set this to your personal API key.
++2. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
++3. **`GATEWAY_BASE_URL`**: The base URL for the Gateway component if testing with the Gateway (e.g., `https://codequery.dev` or your custom Gateway URL).
+ 
+-### Testing the Public API (Gateway)
++After setting these variables, run:
+ 
+-You can use **curl** commands or Postman to interact with the public API.
++```bash
++source .env
++```
++
++### 1. Testing the Core Component Locally
+ 
+-#### Testing the Project Structure Retrieval
++If you’re running the Core component locally (e.g., using `run_local.py`), follow these steps:
++
++#### Health Check (Localhost)
+ 
+ ```bash
+-curl -H "X-API-KEY: <your-api-key>" http://localhost:5001/files/structure
++curl -X GET http://127.0.0.1:$LOCAL_PORT/
+ ```
+ 
+-#### Testing File Content Retrieval
++#### Retrieve Project Structure (Localhost)
+ 
+ ```bash
+-curl -X POST -H "X-API-KEY: <your-api-key>" -d '{"file_paths": ["app.py", "requirements.txt"]}' http://localhost:5001/files/content
++curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
+ ```
+ 
+-You can modify the request body to include different file paths and test how the API handles file retrieval and error scenarios.
++#### Retrieve File Contents (Localhost)
+ 
++```bash
++curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
++  "file_paths": [
++    "src/app.py",
++    "src/ngrok_manager.py"
++  ]
++}' http://127.0.0.1:$LOCAL_PORT/files/content
+ ```
+ 
+-## Creating your own custom GPT for using this API
++### 2. Running Integration Tests
++
++To verify the integration between the Core and Gateway components, use the `tests/integration_test.py` file. This test ensures that the Gateway can correctly interact with the Core API, handling ngrok URL synchronization and request forwarding.
++
++1. **Run the Integration Test**:
++
++   ```bash
++   pytest tests/integration_test.py
++   ```
++
++   This will execute the integration test and provide a summary of the results, validating the communication between the Gateway and Core components.
++
++### 3. Troubleshooting Common Issues
++
++- **Ngrok URL Mismatch**: If you encounter issues with ngrok URL synchronization between the Core and Gateway, ensure that:
++
++  - The `GATEWAY_UPLOAD_URL` is correctly set in your `.env` file.
++  - The Gateway component is reachable and the API key is valid.
++
++- **Missing Environment Variables**: Ensure all necessary environment variables (`PROJECT_PATH`, `API_KEY`, etc.) are defined in your `.env` file.
++
++For more detailed troubleshooting steps, refer to `gateway/README.md` if you're encountering Gateway-specific issues.
++
++## CodeQueryGPT – Creating your own custom GPT for using this API
+ 
+ This API was designed to be used by custom AI assistants. If you are a ChatGPT Premium user, you can create a custom GPT using the **ChatGPT Builder**.
+ 
+@@ -213,13 +362,12 @@ Conversation Starters:
+ - I need assistance in developing a new feature.
+ - Query the main files and help me refactor them for better performance.
+ 
+-````
+-
+-You can of course tweak some of the settings above.
++```
+ 
+ 4. Once the GPT is created, go to the **Configure** tab.
+-5. Enable the **"Code Interpreter & Data Analysis"** option.
+-6. Create a new **Action** by providing the following **OpenAPI schema**:
++5. [Optional] Customize the GPT initialization settings as needed.
++6. Enable the **"Code Interpreter & Data Analysis"** option.
++7. Create a new **Action** by providing the following **OpenAPI schema**:
+ 
+ ```json
+ {
+@@ -231,7 +379,7 @@ You can of course tweak some of the settings above.
+   },
+   "servers": [
+     {
+-      "url": "<YOUR-GENERATED-NGROK-URL>"
++      "url": "<YOUR-PUBLIC-URL>"
+     }
+   ],
+   "paths": {
+@@ -360,9 +508,11 @@ You can of course tweak some of the settings above.
+     }
+   }
+ }
+-````
++```
++
++8. Replace `<YOUR-PUBLIC-URL>` with the URL of your chosen exposure option
+ 
+-7. Make sure to update the `"servers.url"` field with your **ngrok** HTTPS URL, which you generate by running `ngrok http 5001` while the API is running locally.
++   Refer to the [Environment Variable Setup for Testing](#environment-variable-setup-for-testing) section for details on configuring the Core component's URL using ngrok, Gateway, or other options.
+ 
+ ## Privacy
+ 
+diff --git a/commands.md b/commands.md
+index 5a5a6b7..5f1064e 100644
+--- a/commands.md
++++ b/commands.md
+@@ -12,7 +12,28 @@ curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]
+ 
+ clear && pytest tests/ | tee tests/results.txt
+ 
+-### Core-side Endpoints
++### Core-side Endpoints (Localhost)
++
++> Simpler approach, no ngrok or gateway dependency.
++
++#### Health check (Localhost)
++
++curl -X GET http://127.0.0.1:$LOCAL_PORT/
++
++#### GET /files/structure (Localhost)
++
++curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
++
++#### POST /files/content (Localhost)
++
++curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
++"file_paths": [
++"src/app.py",
++"src/ngrok_manager.py"
++]
++}' http://127.0.0.1:$LOCAL_PORT/files/content
++
++### Core-side Endpoints (via nGrok)
+ 
+ #### Health check
+ 
+@@ -70,27 +91,6 @@ curl -X POST "https://codequery.dev/ngrok-urls/" \
+  -H "x-api-key: $API_KEY" \
+  -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
+ 
+-### Localhost Testing
+-
+-> Simpler approach, no ngrok or gateway dependency.
+-
+-#### Health check (Localhost)
+-
+-curl -X GET http://127.0.0.1:$LOCAL_PORT/
+-
+-#### GET /files/structure (Localhost)
+-
+-curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
+-
+-#### POST /files/content (Localhost)
+-
+-curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+-"file_paths": [
+-"src/app.py",
+-"src/ngrok_manager.py"
+-]
+-}' http://127.0.0.1:$LOCAL_PORT/files/content
+-
+ ## Service Management
+ 
+ **Restart service:**
+diff --git a/gateway/README.md b/gateway/README.md
+index 1495db0..49419e9 100644
+--- a/gateway/README.md
++++ b/gateway/README.md
+@@ -1,119 +1,289 @@
++### New README for CodeQuery Gateway
++
++---
++
+ # CodeQuery Gateway
+ 
+ ## Overview
+ 
+-CodeQuery™ Gateway is a FastAPI-based application designed to interact with a codebase by exposing APIs that can fetch file structures and content from remote servers via an ngrok tunnel. The infrastructure for this gateway is deployed on AWS using Terraform, with an EC2 instance running the FastAPI app and a load balancer for handling requests.
++**CodeQuery™ Gateway** is a FastAPI-based service that acts as a secure entry point for managing access to the CodeQuery Core component. It serves as a proxy layer, handling API key validation, ngrok URL management, and secure request forwarding to the Core component. The Gateway is designed to operate within an AWS infrastructure, using S3 for dynamic URL synchronization and an EC2 instance to host the application.
++
++The Gateway is an optional but recommended component for scenarios requiring secure and public access to the Core. Users can set up their own Gateway, using Terraform scripts provided in this repository to deploy a fully configured infrastructure, including EC2 instances, an Application Load Balancer, and DNS setup through Route 53.
+ 
+ ## Features
+ 
+-- **File Structure API**: Retrieve the file structure of the project.
+-- **File Content API**: Fetch the content of specified files.
+-- **API Key Authentication**: Secure access to the APIs using API keys.
+-- **AWS Infrastructure**: Fully configured AWS EC2 instance, security groups, and load balancer via Terraform.
++- **Secure Request Forwarding**: Manages access to the Core component’s `/files/structure` and `/files/content` endpoints using API key validation.
++- **Dynamic ngrok URL Management**: Synchronizes the Core’s ngrok URLs dynamically using S3, allowing seamless updates without downtime.
++- **API Key Authentication**: Ensures secure access to all endpoints using predefined API keys.
++- **Infrastructure as Code**: Fully deployable via Terraform, with modular configurations for EC2, S3, and Load Balancer setups.
+ 
+ ## Prerequisites
+ 
+-- Python 3.x
+-- AWS account with the necessary permissions
++- Python 3.8+
++- AWS account with permissions for EC2, S3, and Route 53
+ - Terraform installed locally
++- A configured `.env` file with relevant AWS and application variables
+ 
+-## Setup
++## Setup and Deployment
+ 
+-### 1. Clone the Repository
++### 1. Navigate to the Gateway Directory
++
++After cloning the **CodeQuery-API** repository as described in the main README, switch to the `gateway/` folder:
+ 
+ ```bash
+-git clone https://github.com/yourusername/CodeQuery-Gateway.git
+-cd CodeQuery-Gateway
++cd CodeQuery-API/gateway
+ ```
+ 
+-### 2. Install Dependencies
++### 2. Configure Environment Variables
++
++Create a `.env` file in the `gateway/` directory with the following variables:
+ 
+ ```bash
+-pip install -r requirements.txt
++# API keys that will be used for authentication
++API_KEYS=test-key,other-valid-key,O8i5EVRqYI+0OGjPgoXI5Ey2CQzfJ+uIyI7e7yn8j0A=
++
++# SSH and EC2 configuration for managing the remote Gateway server
++EC2_USER="ec2-user"
++EC2_HOST="<Your-EC2-Host-URL>"    # Replace with your EC2 public DNS or IP
++KEY_PATH="./secrets/codequery-keypair.pem"  # Path to your SSH private key file
+ ```
+ 
+-### 3. Configure Environment Variables
++**Important**: Replace `<Your-EC2-Host-URL>` with your actual EC2 instance’s public DNS (e.g., `ec2-xx-xx-xxx-xxx.region-id.compute.amazonaws.com`). Ensure the `KEY_PATH` points to your SSH private key file used for connecting to the EC2 instance.
+ 
+-Create a `.env` file with the following variables:
++### 3. Install Dependencies
+ 
+ ```bash
+-NGROK_URL=<your-ngrok-url>
+-API_KEYS=<your-comma-separated-api-keys>
++pip install -r requirements.txt
+ ```
+ 
+ ### 4. Terraform Setup
+ 
+-#### a. Configure `terraform.tfvars`
++#### a. Configure Terraform Variables
+ 
+-Fill out the `terraform.tfvars_template` with your AWS-specific values (region, AMI ID, etc.) and save it as `terraform.tfvars`.
++Fill out the `terraform/terraform.tfvars` file with your AWS-specific values (region, AMI ID, etc.). This configuration will be used for the deployment of the Gateway infrastructure.
+ 
+-#### b. Initialize, Plan and Apply Terraform
++#### b. Initialize, Plan, and Apply Terraform
+ 
+ ```bash
++cd terraform
+ terraform init
+ terraform plan
+ terraform apply
+ ```
+ 
+-This will set up the EC2 instance, security groups, load balancer, and related resources on AWS.
+-
+-### 5. Start the Application
++This will provision the EC2 instance, security groups, and other necessary resources.
+ 
+-To start or restart the application, use the following commands directly:
++### 5. Start the Application Locally (Optional)
+ 
+-#### Refresh the `.env` File:
++You can start the Gateway locally for testing:
+ 
+ ```bash
+-scp -i ../secrets/codequery-keypair.pem .env ec2-user@<your-ec2-host>:/home/ec2-user/gateway
++uvicorn gateway:app --reload
+ ```
+ 
+-#### Restart the FastAPI Server:
++### 6. Deploying to EC2
+ 
+-```bash
+-ssh -i ../secrets/codequery-keypair.pem ec2-user@<your-ec2-host> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
+-```
++Once the Gateway infrastructure is set up using Terraform, follow these steps to deploy the application files to the EC2 instance and manage the service:
+ 
+-#### Deploy or Copy Application Files:
++1. **Access the EC2 Instance via SSH**
+ 
+-```bash
+-scp -i ../secrets/codequery-keypair.pem app.py ec2-user@<your-ec2-host>:/home/ec2-user/gateway
+-scp -i ../secrets/codequery-keypair.pem requirements.txt ec2-user@<your-ec2-host>:/home/ec2-user/gateway
+-```
++   Make sure you have the environment variables configured (`EC2_USER`, `EC2_HOST`, and `KEY_PATH`) in your `.env` file.
+ 
+-## Testing
++   ```bash
++   source .env && ssh -i $KEY_PATH $EC2_USER@$EC2_HOST
++   ```
+ 
+-You can start the FastAPI application locally with:
++2. **Upload the Gateway Files to the EC2 Instance**
+ 
+-```bash
+-uvicorn app:app --reload
+-```
++   Use `rsync` to upload all necessary files:
+ 
+-### File Structure API
++   ```bash
++   rsync -av -e "ssh -i $KEY_PATH" --relative \
++       .env \
++       requirements.txt \
++       gateway.py \
++       src/__init__.py \
++       src/s3_manager.py \
++       conftest.py \
++       tests/test_gateway.py \
++       tests/test_s3_manager.py \
++       $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway/
++   ```
+ 
+-To test the file structure endpoint, make the following request:
++   Alternatively, you can use `scp` to upload individual files:
+ 
+-```bash
+-curl -H "X-API-KEY: <your-api-key>" http://<your-ec2-url>:8080/files/structure
+-```
++   ```bash
++   scp -i $KEY_PATH gateway.py $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
++   ```
+ 
+-### File Content API
++3. **Restart the FastAPI Service**
+ 
+-To test the file content endpoint, use the following:
++   After uploading the files, restart the FastAPI service:
+ 
+-```bash
+-curl -X POST -H "X-API-KEY: <your-api-key>" -d '{"file_paths": ["app.py", "requirements.txt"]}' http://<your-ec2-url>:8080/files/content
+-```
++   ```bash
++   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi"
++   ```
+ 
+-## Deployment
++4. **Check the Service Status**
+ 
+-### Restarting the FastAPI Service
++   Verify that the service is running correctly:
+ 
+-You can restart the FastAPI service on the EC2 instance using SSH:
++   ```bash
++   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl status fastapi"
++   ```
+ 
+-```bash
+-ssh -i ../secrets/codequery-keypair.pem ec2-user@<your-ec2-url> "sudo systemctl restart fastapi && sudo systemctl status fastapi"
+-```
++5. **Retrieve Logs (Optional)**
++
++   To check the latest logs, run:
++
++   ```bash
++   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo journalctl -u fastapi -n 50"
++   ```
++
++   To save the logs to your local machine:
++
++   ```bash
++   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo journalctl -u fastapi -n 50" > logs/journalctl.txt
++   ```
++
++6. **Clear Logs and Restart (If Needed)**
++
++   If you need to clear old logs and restart the service:
++
++   ```bash
++   ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo journalctl --rotate && sudo journalctl --vacuum-time=1s && sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi"
++   ```
++
++This ensures the Gateway application is correctly deployed, managed, and monitored on the EC2 instance.
++
++## API Endpoints
++
++### 1. **Health Check**
++
++- **Endpoint**: `/`
++- **Method**: `GET`
++- **Description**: Confirms that the Gateway component is running.
++
++  **Example Request**:
++
++  ```bash
++  curl -X GET https://your-gateway-url.com/
++  ```
++
++  **Example Response**:
++
++  ```json
++  {
++    "message": "FastAPI is running"
++  }
++  ```
++
++### 2. **Retrieve Project Structure**
++
++- **Endpoint**: `/files/structure`
++- **Method**: `GET`
++- **Description**: Retrieves the file structure from the Core component.
++
++  **Example Request**:
++
++  ```bash
++  curl -H "X-API-KEY: <your-api-key>" https://your-gateway-url.com/files/structure
++  ```
++
++  **Example Response**:
++
++  ```json
++  {
++    ".": {
++      "directories": ["src", "tests"],
++      "files": ["README.md", "requirements.txt"]
++    }
++  }
++  ```
++
++### 3. **Retrieve File Content**
++
++- **Endpoint**: `/files/content`
++- **Method**: `POST`
++- **Description**: Fetches the content of specified files from the Core component.
++
++  **Example Request**:
++
++  ```bash
++  curl -X POST -H "X-API-KEY: <your-api-key>" -H "Content-Type: application/json" -d '{
++    "file_paths": ["README.md", "src/app.py"]
++  }' https://your-gateway-url.com/files/content
++  ```
++
++  **Example Response**:
++
++  ```json
++  {
++    "README.md": {
++      "content": "# CodeQuery Project"
++    },
++    "src/app.py": {
++      "content": "# Main application file for the CodeQuery Core API."
++    }
++  }
++  ```
++
++### 4. **ngrok URL Management**
++
++#### Retrieve ngrok URL for an API Key
++
++- **Endpoint**: `/ngrok-urls/{api_key}`
++- **Method**: `GET`
++- **Description**: Retrieves the current ngrok URL associated with a specific API key.
++
++  **Example Request**:
++
++  ```bash
++  curl -X GET https://your-gateway-url.com/ngrok-urls/<your-api-key>
++  ```
++
++  **Example Response**:
++
++  ```json
++  {
++    "api_key": "your-api-key",
++    "ngrok_url": "https://example.ngrok-free.app"
++  }
++  ```
++
++#### Update ngrok URL for an API Key
++
++- **Endpoint**: `/ngrok-urls/`
++- **Method**: `POST`
++- **Description**: Updates the ngrok URL for a given API key.
++
++  **Example Request**:
++
++  ```bash
++  curl -X POST -H "Content-Type: application/json" -d '{
++    "api_key": "your-api-key",
++    "ngrok_url": "https://example.ngrok-free.app"
++  }' https://your-gateway-url.com/ngrok-urls/
++  ```
++
++  **Example Response**:
++
++  ```json
++  {
++    "message": "ngrok URL updated successfully"
++  }
++  ```
++
++## Troubleshooting
++
++- **API Key Issues**: Ensure that the API key is correctly set in your environment variables and the `.env` file on the EC2 instance.
++- **ngrok URL Mismatch**: If the Core’s ngrok URL is not synchronizing correctly, check the S3 bucket for the current values and verify that the Gateway exposed URL is configured properly, and correctly set in `GATEWAY_BASE_URL` (Core-side variable).
++- **Permission Errors**: Verify that the EC2 instance and S3 bucket have the correct IAM roles and permissions.
+ 
+ ## License
+ 
+ This project is licensed under the Apache 2.0 License. See the `LICENSE` file for details.
++
++---
++
++This new README provides a clear and structured overview of the Gateway component, its setup, and usage. Let me know if you'd like to refine any specific sections!
+diff --git a/openapi.json b/openapi.json
+index 1e2e509..0ad7fbb 100644
+--- a/openapi.json
++++ b/openapi.json
+@@ -7,7 +7,7 @@
+   },
+   "servers": [
+     {
+-      "url": "<YOUR-GENERATED-NGROK-URL>"
++      "url": "<YOUR-PUBLIC-URL>"
+     }
+   ],
+   "paths": {
+diff --git a/src/ngrok_manager.py b/src/ngrok_manager.py
+index 1b8dad7..9b391e0 100644
+--- a/src/ngrok_manager.py
++++ b/src/ngrok_manager.py
+@@ -17,7 +17,8 @@ class NgrokManager:
+     def refresh_environment_variables(self) -> None:
+         """Refresh class attributes from the environment variables."""
+         self.ngrok_api_url = os.getenv("NGROK_API_URL")
+-        self.gateway_upload_url = os.getenv("GATEWAY_UPLOAD_URL")
++        self.gateway_base_url = os.getenv("GATEWAY_BASE_URL")
++        self.gateway_ngrok_url = self.gateway_base_url + '/ngrok-urls/'
+         self.api_key = os.getenv("API_KEY")
+         self.timeout = int(os.getenv("TIMEOUT", "10"))
+ 
+@@ -64,11 +65,11 @@ class NgrokManager:
+ 
+     def upload_ngrok_url_to_gateway(self, ngrok_url: str) -> bool:
+         """Upload the ngrok URL to the gateway server."""
+-        gateway_url = self.gateway_upload_url
++        gateway_url = self.gateway_ngrok_url
+         api_key = self.api_key
+ 
+         if not gateway_url or not api_key:
+-            print(f"Missing GATEWAY_UPLOAD_URL (\
++            print(f"Missing GATEWAY_NGROK_URL (\
+                   {gateway_url}) or API_KEY ({api_key})")
+             return False
+ 
+@@ -110,11 +111,11 @@ class NgrokManager:
+                 ngrok_url = tunnels[0].get("public_url")
+                 print(f"ngrok is running: {ngrok_url}")
+ 
+-                if self.gateway_upload_url is None:
+-                    print("Warning: GATEWAY_UPLOAD_URL is not set.")
++                if self.gateway_ngrok_url is None:
++                    print("Warning: GATEWAY_UPLOAD_URL is not correctly built.")
+                     return False
+ 
+-                if ngrok_url.strip().lower() == self.gateway_upload_url.strip().lower():
++                if ngrok_url.strip().lower() == self.gateway_ngrok_url.strip().lower():
+                     print("ngrok URL is already synchronized with the gateway.")
+                     return True
+ 
+diff --git a/tests/integration_test.py b/tests/integration_test.py
+index 2aa6fc1..bfa6832 100644
+--- a/tests/integration_test.py
++++ b/tests/integration_test.py
+@@ -4,15 +4,17 @@ import time
+ import requests
+ from dotenv import load_dotenv
+ 
++# TODO: Improve this test to make it rougher, including calls for other endpoints.
++
+ # Load environment variables from .env file
+ load_dotenv()
+ 
+ # Configuration from environment variables
+ API_KEY = os.getenv("API_KEY")
+ GATEWAY_BASE_URL = os.getenv("GATEWAY_BASE_URL")
+-GATEWAY_UPLOAD_URL = os.getenv("GATEWAY_UPLOAD_URL")
++GATEWAY_NGROK_URL = os.getenv("GATEWAY_BASE_URL") + '/ngrok-urls/'
+ # Extract base URL from the upload endpoint
+-NGROK_URL_ENDPOINT = f"{GATEWAY_UPLOAD_URL}{API_KEY}"
++NGROK_URL_ENDPOINT = f"{GATEWAY_NGROK_URL}{API_KEY}"
+ FILES_STRUCTURE_ENDPOINT = f"{GATEWAY_BASE_URL}/files/structure"
+ LOCAL_SCRIPT_COMMAND = ["python", "run.py"]
+ 
+diff --git a/tests/test_ngrok_manager.py b/tests/test_ngrok_manager.py
+index e84db2a..61a9893 100644
+--- a/tests/test_ngrok_manager.py
++++ b/tests/test_ngrok_manager.py
+@@ -48,7 +48,7 @@ class TestNgrokManager:
+     @responses.activate
+     def test_upload_ngrok_url_success(self):
+         # Mock the request URL and response.
+-        self.ngrok_manager.gateway_upload_url = 'http://mockserver/ngrok-url'
++        self.ngrok_manager.gateway_ngrok_url = 'http://mockserver/ngrok-url'
+         self.ngrok_manager.api_key = 'your-api-key'
+ 
+         # Mock the POST request to simulate a successful ngrok URL upload.
+@@ -84,7 +84,7 @@ class TestNgrokManager:
+     @mock.patch('src.ngrok_manager.requests.post')
+     def test_upload_ngrok_url_failure(self, mock_post):
+         # Directly override the attributes in the NgrokManager instance
+-        self.ngrok_manager.gateway_upload_url = 'https://your-gateway-url/ngrok-url'
++        self.ngrok_manager.gateway_ngrok_url = 'https://your-gateway-url/ngrok-url'
+         self.ngrok_manager.api_key = 'your-api-key'
+ 
+         mock_post.side_effect = requests.exceptions.RequestException(
+@@ -121,12 +121,11 @@ class TestNgrokManager:
+     def test_check_ngrok_status_running_synchronized(self, mock_upload, mock_get):
+         # Mock the ngrok status response
+         mock_get.return_value.json.return_value = {
+-            "tunnels": [{"public_url": "https://abc123.ngrok-free.app"}]
+-        }
++            "tunnels": [{"public_url": "https://abc123.ngrok-free.app"}]}
+         mock_get.return_value.status_code = 200
+ 
+-        # Set the environment variable for the current gateway upload URL
+-        with mock.patch.dict(os.environ, {"GATEWAY_UPLOAD_URL": "https://abc123.ngrok-free.app"}):
++        # Set the environment variable for the new GATEWAY_BASE_URL
++        with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://abc123.ngrok-free.app"}):
+             result = self.ngrok_manager.check_ngrok_status()
+ 
+         # Assert the result and that no upload was triggered
+@@ -143,7 +142,7 @@ class TestNgrokManager:
+         mock_get.return_value.status_code = 200
+ 
+         # Set the environment variable to simulate an out-of-sync gateway URL
+-        with mock.patch.dict(os.environ, {"GATEWAY_UPLOAD_URL": "https://old-ngrok-url.ngrok-free.app"}):
++        with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://old-ngrok-url.ngrok-free.app"}):
+             # Ensure that the upload_ngrok_url_to_gateway returns True to match the assertion
+             mock_upload.return_value = True
+             result = self.ngrok_manager.check_ngrok_status()
+@@ -159,7 +158,7 @@ class TestNgrokManager:
+         mock_get.return_value.json.return_value = {"tunnels": []}
+         mock_get.return_value.status_code = 200
+ 
+-        with mock.patch.dict(os.environ, {"GATEWAY_UPLOAD_URL": "https://abc123.ngrok-free.app"}):
++        with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://abc123.ngrok-free.app"}):
+             result = self.ngrok_manager.check_ngrok_status()
+ 
+         assert result is False

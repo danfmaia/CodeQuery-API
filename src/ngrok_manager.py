@@ -17,7 +17,8 @@ class NgrokManager:
     def refresh_environment_variables(self) -> None:
         """Refresh class attributes from the environment variables."""
         self.ngrok_api_url = os.getenv("NGROK_API_URL")
-        self.gateway_ngrok_url = os.getenv("GATEWAY_URL") + '/ngrok-urls/'
+        self.gateway_base_url = os.getenv("GATEWAY_BASE_URL")
+        self.gateway_ngrok_url = self.gateway_base_url + '/ngrok-urls/'
         self.api_key = os.getenv("API_KEY")
         self.timeout = int(os.getenv("TIMEOUT", "10"))
 
@@ -110,11 +111,11 @@ class NgrokManager:
                 ngrok_url = tunnels[0].get("public_url")
                 print(f"ngrok is running: {ngrok_url}")
 
-                if self.gateway_ngrok_url is None:
-                    print("Warning: GATEWAY_UPLOAD_URL is not correctly built.")
+                if self.gateway_base_url is None:
+                    print("Warning: GATEWAY_BASE_URL is not correctly set.")
                     return False
 
-                if ngrok_url.strip().lower() == self.gateway_ngrok_url.strip().lower():
+                if ngrok_url.strip().lower() == self.gateway_base_url.strip().lower():
                     print("ngrok URL is already synchronized with the gateway.")
                     return True
 
@@ -123,6 +124,11 @@ class NgrokManager:
                 return self.upload_ngrok_url_to_gateway(ngrok_url)
 
             print("No active ngrok tunnels found. Restarting ngrok...")
+            self.setup_ngrok()
+            return False
+
+        except requests.exceptions.RequestException:
+            print("ngrok is not running. Setting up ngrok...")
             self.setup_ngrok()
             return False
 

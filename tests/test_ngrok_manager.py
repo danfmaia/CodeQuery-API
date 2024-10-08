@@ -121,12 +121,11 @@ class TestNgrokManager:
     def test_check_ngrok_status_running_synchronized(self, mock_upload, mock_get):
         # Mock the ngrok status response
         mock_get.return_value.json.return_value = {
-            "tunnels": [{"public_url": "https://abc123.ngrok-free.app"}]
-        }
+            "tunnels": [{"public_url": "https://abc123.ngrok-free.app"}]}
         mock_get.return_value.status_code = 200
 
-        # Set the environment variable for the current gateway upload URL
-        with mock.patch.dict(os.environ, {"GATEWAY_UPLOAD_URL": "https://abc123.ngrok-free.app"}):
+        # Set the environment variable for the new GATEWAY_BASE_URL
+        with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://abc123.ngrok-free.app"}):
             result = self.ngrok_manager.check_ngrok_status()
 
         # Assert the result and that no upload was triggered
@@ -143,7 +142,7 @@ class TestNgrokManager:
         mock_get.return_value.status_code = 200
 
         # Set the environment variable to simulate an out-of-sync gateway URL
-        with mock.patch.dict(os.environ, {"GATEWAY_UPLOAD_URL": "https://old-ngrok-url.ngrok-free.app"}):
+        with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://old-ngrok-url.ngrok-free.app"}):
             # Ensure that the upload_ngrok_url_to_gateway returns True to match the assertion
             mock_upload.return_value = True
             result = self.ngrok_manager.check_ngrok_status()
@@ -159,7 +158,7 @@ class TestNgrokManager:
         mock_get.return_value.json.return_value = {"tunnels": []}
         mock_get.return_value.status_code = 200
 
-        with mock.patch.dict(os.environ, {"GATEWAY_UPLOAD_URL": "https://abc123.ngrok-free.app"}):
+        with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://abc123.ngrok-free.app"}):
             result = self.ngrok_manager.check_ngrok_status()
 
         assert result is False
