@@ -1,0 +1,30 @@
+diff --git a/gateway/tests/test_s3_manager.py b/gateway/tests/test_s3_manager.py
+index 0deb764..2390e96 100644
+--- a/gateway/tests/test_s3_manager.py
++++ b/gateway/tests/test_s3_manager.py
+@@ -30,7 +30,7 @@ class TestS3Manager(unittest.TestCase):
+         mock_s3_client = MagicMock()
+         mock_get_s3_client.return_value = mock_s3_client
+ 
+-        # Mock the S3 response with isolated URL
++        # Mock the S3 response with a controlled initial state
+         mock_response = MagicMock()
+         mock_response['Body'].read.return_value = b'{"test-api-key": "https://example.ngrok.io"}'
+         mock_s3_client.get_object.return_value = mock_response
+@@ -48,7 +48,7 @@ class TestS3Manager(unittest.TestCase):
+         mock_s3_client = MagicMock()
+         mock_get_s3_client.return_value = mock_s3_client
+ 
+-        # Mock the S3 get_object response (empty data)
++        # Mock the S3 get_object response to simulate initial empty state
+         mock_response = MagicMock()
+         mock_response['Body'].read.return_value = b'{}'
+         mock_s3_client.get_object.return_value = mock_response
+@@ -71,7 +71,7 @@ class TestS3Manager(unittest.TestCase):
+         )
+ 
+     def tearDown(self):
+-        """Tear down any shared state."""
++        """Clear the state after each test."""
+         self.s3_manager = None
+ 

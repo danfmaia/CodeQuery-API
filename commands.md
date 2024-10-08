@@ -2,87 +2,93 @@
 
 <!-- TODO: Rewrite history to purge sensitive data in this file. -->
 
-## Core
-
 lsof -i :5001 && ps aux | grep ngrok
 
-### Testing
+curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]+\.ngrok-free\.app'
 
-source .env && curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
+## Testing
+
+### Pytest
+
+clear && pytest tests/ | tee tests/results.txt
+
+### Core-side Endpoints
+
+source .env
+
+#### Health check
+
+export NGROK_TEST_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]+\.ngrok-free\.app')
+
+curl -X GET $NGROK_TEST_URL/health
+
+#### GET /files/structure
+
+curl -H "X-API-KEY: $API_KEY" $NGROK_TEST_URL/files/structure
+
+#### POST /files/content
+
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+"file_paths": [
+"gateway/gateway.py",
+"gateway/src/s3_manager.py"
+]
+}' $NGROK_TEST_URL/files/content
+
+### Gateway-side Endpoints
+
+#### GET /files/structure
+
+curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
 
 curl -H "X-API-KEY: $API_KEY" http://$EC2_HOST:8080/files/structure
 
-## Gateway
+#### POST /files/content
 
-cd /home/danfmaia/\_repos/CodeQuery-API/gateway && source .env
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+"file_paths": [
+"gateway/gateway.py",
+"gateway/src/s3_manager.py"
+]
+}' https://codequery.dev/files/content
 
-source .env
+#### GET /ngrok-urls/$API_KEY
 
-### Terraform
+curl -X GET "https://codequery.dev/ngrok-urls/$API_KEY" \
+ -H "x-api-key: $API_KEY"
 
-terraform init | terraform plan | terraform apply
+curl -X GET "https://codequery.dev/ngrok-urls/test-key" \
+ -H "x-api-key: $API_KEY"
 
-### Gateway Management
+#### POST /ngrok-urls/
 
-source .env && ssh -i $KEY_PATH $EC2_USER@$EC2_HOST
+curl -X POST "https://codequery.dev/ngrok-urls/" \
+ -H "Content-Type: application/json" \
+ -H "x-api-key: $API_KEY" \
+ -d '{"api_key": $API_KEY, "ngrok_url": "https://6e95-2804-1b3-7000-829a-c598-42f-2d99-3b97.ngrok-free.app"}'
 
-**Upload files:**
+curl -X POST "https://codequery.dev/ngrok-urls/" \
+ -H "Content-Type: application/json" \
+ -H "x-api-key: $API_KEY" \
+ -d '{"api_key": "test-key", "ngrok_url": "https://new-ngrok-url.ngrok.io"}'
 
-scp -i $KEY_PATH .env gateway.py requirements.txt $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
+## Service Management
 
-scp -i $KEY_PATH .env $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
+**Restart service:**
 
-source .env && curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
+sudo systemctl daemon-reload && sudo systemctl restart codequery_core && sudo systemctl status codequery_core
 
-## Gateway
+**Clear journalctl logs && Restart service:**
 
-cd /home/danfmaia/\_repos/CodeQuery-API/gateway && source .env
+sudo journalctl --rotate && sudo journalctl --vacuum-time=1s && clear && \
+sudo systemctl daemon-reload && sudo systemctl restart codequery_core && sudo systemctl status codequery_core
 
-source .env
+**Check service status:**
 
-### Terraform
+sudo systemctl status codequery_core
 
-terraform init
+sudo journalctl -u codequery_core -n 50
 
-terraform plan
+**Clear journalctl logs**
 
-terraform apply
-
-### Gateway Management
-
-ssh -i $KEY_PATH $EC2_USER@$EC2_HOST
-
-**Upload files:**
-
-scp -i $KEY_PATH .env gateway.py requirements.txt $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
-
-scp -i $KEY_PATH gateway.py $EC2_USER@$EC2_HOST:/home/$EC2_USER/gateway
-
-**Restart server:**
-
-ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi"
-
-[Remote] sudo systemctl daemon-reload && sudo systemctl restart fastapi && sudo systemctl status fastapi
-
-**Check server status:**
-
-ssh -i $KEY_PATH $EC2_USER@$EC2_HOST "sudo systemctl status fastapi"
-
-[Remote] sudo systemctl status fastapi
-
-[Remote] sudo journalctl -u fastapi.service -n 50
-
-**Inspect FastAPI service spec:**
-
-[Remote] sudo nano /etc/systemd/system/fastapi.service
-
-**Misc:**
-
----
-
-(venv) [ec2-user@ip-172-31-42-110 gateway]$ sudo chown ec2-user:ec2-user /home/ec2-user/gateway/.env
-sudo chmod 644 /home/ec2-user/gateway/.env
-(venv) [ec2-user@ip-172-31-42-110 gateway]$ sudo chown -R ec2-user:ec2-user /home/ec2-user/gateway/
-sudo chmod -R 755 /home/ec2-user/gateway/
-
-ssh -i "${KEY_PATH}" "${EC2_USER}@${EC2_HOST}" "sudo chown -R ec2-user:ec2-user /home/ec2-user/gateway/ && sudo chmod -R 755 /home/ec2-user/gateway/"
+sudo journalctl --rotate && sudo journalctl --vacuum-time=1s && clear

@@ -1,0 +1,114 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-8.3.2, pluggy-1.5.0
+rootdir: /home/danfmaia/_repos/CodeQuery-API
+configfile: pyproject.toml
+plugins: anyio-4.3.0
+collected 6 items
+
+tests/test_ngrok_manager.py .FF...                                       [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_start_ngrok_failure ___________________________
+
+mock_get = <MagicMock name='get' id='129309447218880'>
+mock_subprocess = <MagicMock name='run' id='129309447222576'>
+
+    @mock.patch('src.ngrok_manager.subprocess.run')
+    @mock.patch('src.ngrok_manager.requests.get')
+    def test_start_ngrok_failure(mock_get, mock_subprocess):
+        # Simulate subprocess failure
+        mock_subprocess.side_effect = Exception("Subprocess failed")
+    
+>       ngrok_url = start_ngrok()
+
+tests/test_ngrok_manager.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/ngrok_manager.py:20: in start_ngrok
+    subprocess.run(["ngrok", "http", "8080"], check=True)
+../../miniconda3/lib/python3.12/unittest/mock.py:1134: in __call__
+    return self._mock_call(*args, **kwargs)
+../../miniconda3/lib/python3.12/unittest/mock.py:1138: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='run' id='129309447222576'>
+args = (['ngrok', 'http', '8080'],), kwargs = {'check': True}
+effect = Exception('Subprocess failed')
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+    
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+>               raise effect
+E               Exception: Subprocess failed
+
+../../miniconda3/lib/python3.12/unittest/mock.py:1193: Exception
+----------------------------- Captured stdout call -----------------------------
+Starting ngrok...
+________________________ test_upload_ngrok_url_success _________________________
+
+mock_post = <MagicMock name='post' id='129309447093664'>
+
+    @mock.patch('src.ngrok_manager.requests.post')
+    def test_upload_ngrok_url_success(mock_post):
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.raise_for_status = mock.Mock()
+    
+        ngrok_url = "https://abc123.ngrok-free.app"
+        success = upload_ngrok_url_to_gateway(ngrok_url)
+    
+        assert success is True
+>       mock_post.assert_called_once_with(
+            'https://your-gateway-url/ngrok-url',
+            json={'ngrok_url': ngrok_url},
+            headers={'X-API-KEY': 'your-api-key'}
+        )
+
+tests/test_ngrok_manager.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniconda3/lib/python3.12/unittest/mock.py:956: in assert_called_once_with
+    return self.assert_called_with(*args, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='post' id='129309447093664'>
+args = ('https://your-gateway-url/ngrok-url',)
+kwargs = {'headers': {'X-API-KEY': 'your-api-key'}, 'json': {'ngrok_url': 'https://abc123.ngrok-free.app'}}
+expected = call('https://your-gateway-url/ngrok-url', json={'ngrok_url': 'https://abc123.ngrok-free.app'}, headers={'X-API-KEY': 'your-api-key'})
+actual = call(None, json={'ngrok_url': 'https://abc123.ngrok-free.app'}, headers={'X-API-KEY': None}, timeout=10)
+_error_message = <function NonCallableMock.assert_called_with.<locals>._error_message at 0x759b33aa4680>
+cause = None
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: %s'
+                    % (expected, actual))
+            raise AssertionError(error_message)
+    
+        def _error_message():
+            msg = self._format_mock_failure_message(args, kwargs)
+            return msg
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        actual = self._call_matcher(self.call_args)
+        if actual != expected:
+            cause = expected if isinstance(expected, Exception) else None
+>           raise AssertionError(_error_message()) from cause
+E           AssertionError: expected call not found.
+E           Expected: post('https://your-gateway-url/ngrok-url', json={'ngrok_url': 'https://abc123.ngrok-free.app'}, headers={'X-API-KEY': 'your-api-key'})
+E             Actual: post(None, json={'ngrok_url': 'https://abc123.ngrok-free.app'}, headers={'X-API-KEY': None}, timeout=10)
+
+../../miniconda3/lib/python3.12/unittest/mock.py:944: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Successfully uploaded ngrok URL to gateway.
+=========================== short test summary info ============================
+FAILED tests/test_ngrok_manager.py::test_start_ngrok_failure - Exception: Sub...
+FAILED tests/test_ngrok_manager.py::test_upload_ngrok_url_success - Assertion...
+========================= 2 failed, 4 passed in 2.17s ==========================

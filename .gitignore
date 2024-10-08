@@ -6,6 +6,10 @@ venv/
 
 secrets/
 logs/
+results.txt
+git_diff.txt
+command.txt
+temp.txt
 
 #
 # Gateway
