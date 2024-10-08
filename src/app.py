@@ -14,7 +14,7 @@ from src.services.file_service import FileService
 class CodeQueryAPI:
     """CodeQueryAPI is a Flask-based application managing ngrok tunnels and exposing API endpoints."""
 
-    def __init__(self):
+    def __init__(self, use_ngrok=True):
         # Initialize environment variables and configurations
         self.project_path = os.getenv('PROJECT_PATH', './')
         self.agentignore_files = os.getenv('AGENTIGNORE_FILES', '[]')
@@ -23,9 +23,6 @@ class CodeQueryAPI:
         self.logger = logging.getLogger('flask_app')
         self.logger.info("Checking project path: %s", self.project_path)
         self.logger.info("Agent ignore files: %s", self.agentignore_files)
-
-        # Initialize ngrok manager
-        self.ngrok_manager = NgrokManager()
 
         # Initialize FileService with project configurations
         self.file_service = FileService(
@@ -36,6 +33,19 @@ class CodeQueryAPI:
         self.configure_logging()
         self.setup_routes()
         self.setup_log_filters()
+
+        if use_ngrok:
+            # Initialize ngrok manager only if needed
+            self.ngrok_manager = NgrokManager()
+
+    @classmethod
+    def init_local_service(cls):
+        """Initialize the Core service without ngrok setup."""
+        # Set up a simpler local version of the Core without Ngrok dependency
+        instance = cls(use_ngrok=False)
+        instance.logger.info(
+            "Starting CodeQuery in local-only mode (no ngrok tunnel).")
+        return instance
 
     def configure_logging(self):
         """Configure logging for the application."""
@@ -147,10 +157,3 @@ class CodeQueryAPI:
         """Run the Flask application."""
         local_port = int(os.getenv("LOCAL_PORT", "5001"))
         self.app.run(host='0.0.0.0', port=local_port)
-
-
-# Entry point for running the application
-if __name__ == '__main__':
-    api = CodeQueryAPI()
-    api.ensure_ngrok_tunnel()
-    api.run()
