@@ -1,7 +1,3 @@
-### New README for CodeQuery Gateway
-
----
-
 # CodeQuery Gateway
 
 ## Overview
@@ -282,8 +278,7 @@ This ensures the Gateway application is correctly deployed, managed, and monitor
 
 ## License
 
-This project is licensed under the Apache 2.0 License. See the `LICENSE` file for details.
+This project is licensed under the Apache License, Version 2.0.  
+You may obtain a copy of the License at:
 
----
-
-This new README provides a clear and structured overview of the Gateway component, its setup, and usage. Let me know if you'd like to refine any specific sections!
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
