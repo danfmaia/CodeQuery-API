@@ -19,13 +19,17 @@ class TestNgrokManager:
         """
         self.ngrok_manager = NgrokManager()  # pylint: disable=W0201
 
-    @mock.patch('src.ngrok_manager.subprocess.run')
+    @mock.patch('src.ngrok_manager.subprocess.Popen')
     @mock.patch('src.ngrok_manager.requests.get')
-    def test_start_ngrok_success(self, mock_get, mock_subprocess):
-        # Mock the subprocess call to succeed
-        mock_subprocess.return_value = None
+    def test_start_ngrok_success(self, mock_get, mock_popen):
+        # Mock subprocess to simulate ngrok start
+        mock_process = mock.Mock()
+        mock_process.communicate.return_value = ('', '')
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
 
-        # Mock the ngrok API response with a valid HTTPS tunnel
+        # Mock the ngrok API response to return a successful status
+        mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             'tunnels': [{'public_url': 'https://abc123.ngrok-free.app', 'proto': 'https'}]
         }

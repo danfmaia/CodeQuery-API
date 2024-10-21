@@ -1,0 +1,18 @@
+[Unit]
+Description=CodeQuery Core Service
+After=network.target
+
+[Service]
+User=danfmaia
+WorkingDirectory=/home/danfmaia/_repos/CodeQuery-API
+EnvironmentFile=/home/danfmaia/_repos/CodeQuery-API/.env
+ExecStart=/home/danfmaia/_repos/CodeQuery-API/core/venv/bin/python core/run.py
+Restart=always
+
+# Updated logging configuration
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=codequery_core
+
+[Install]
+WantedBy=multi-user.target

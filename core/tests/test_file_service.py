@@ -3,7 +3,7 @@
 import json
 import pytest
 from src.app import CodeQueryAPI
-from src.services.file_service import FileService
+from src.file_service import FileService
 
 PROJECT_PATH = "./"
 AGENTIGNORE_FILE_1 = ".agentignore"
@@ -38,13 +38,13 @@ class TestFileService:
     def test_retrieve_single_file(self, _client_):
         """Test the /files/content endpoint with a single file."""
         response = _client_.post(
-            '/files/content', json={"file_paths": ["src/app.py"]})
+            '/files/content', json={"file_paths": ["core/src/app.py"]})
         assert response.status_code == 200
 
     def test_retrieve_multiple_files(self, _client_):
         """Test the /files/content endpoint with multiple files."""
         response = _client_.post(
-            '/files/content', json={"file_paths": ["src/app.py", "tests/test_app.py"]})
+            '/files/content', json={"file_paths": ["core/src/app.py", "core/tests/test_app.py"]})
         assert response.status_code == 200
 
     def test_retrieve_nonexistent_file(self, _client_):

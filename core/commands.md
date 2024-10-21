@@ -1,6 +1,9 @@
 # Commands
 
-> `source .env` - Please use this command first.
+## Running
+
+docker rm -f codequery_core 2>/dev/null || true &&\
+ docker run -d -p 5001:5001 --name codequery_core -v "$(pwd):/app" codequery_core
 
 lsof -i :$LOCAL_PORT && ps aux | grep ngrok
 
@@ -8,9 +11,15 @@ curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]
 
 ## Testing
 
-### Pytest
+clear && docker run --rm codequery_core COMMAND
 
-clear && pytest tests/ | tee tests/results.txt
+### Unit testing with Pytest
+
+clear && docker run --rm codequery_core pytest core/tests
+
+### Integration testing
+
+clear && docker run --rm codequery_core python core/tests/integration_test.py
 
 ### Core-side Endpoints (Localhost)
 
@@ -28,8 +37,8 @@ curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
 
 curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
 "file_paths": [
-"src/app.py",
-"src/ngrok_manager.py"
+"core/src/app.py",
+"core/src/ngrok_manager.py"
 ]
 }' http://127.0.0.1:$LOCAL_PORT/files/content
 
@@ -70,6 +79,14 @@ curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
 "gateway/src/s3_manager.py"
 ]
 }' https://codequery.dev/files/content
+
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+"file_paths": [
+".env"
+]
+}' https://codequery.dev/files/content
+
+NGROK_TEST_URL/files/content
 
 #### GET /ngrok-urls/$API_KEY
 

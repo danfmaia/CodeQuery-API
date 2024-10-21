@@ -1,5 +1,3 @@
-# src/services/file_service.py
-
 import logging
 import os
 import pathspec

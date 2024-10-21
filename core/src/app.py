@@ -1,5 +1,3 @@
-# src/app.py
-
 from logging.handlers import SysLogHandler
 import os
 import logging
@@ -8,7 +6,7 @@ from flask import Flask, request, jsonify
 
 
 from src.ngrok_manager import NgrokManager
-from src.services.file_service import FileService
+from src.file_service import FileService
 
 
 class CodeQueryAPI:
@@ -68,11 +66,18 @@ class CodeQueryAPI:
     def ensure_ngrok_tunnel(self):
         """Ensure the ngrok tunnel is correctly set up and synchronized."""
         print("Ensuring ngrok tunnel is set up...")
+
         if not self.ngrok_manager.check_ngrok_status():
             print("ngrok tunnel not running or not synchronized. Setting up...")
             self.ngrok_manager.setup_ngrok()
-        else:
-            print("ngrok tunnel is already running and synchronized with the gateway.")
+
+        # Verify ngrok health after setup
+        if not self.ngrok_manager.check_ngrok_health():
+            print("ngrok health check failed. Exiting setup.")
+            return False
+
+        print("ngrok tunnel is running and synchronized.")
+        return True
 
     def setup_log_filters(self):
         """Apply filters to the access logs."""

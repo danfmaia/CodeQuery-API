@@ -1,8 +1,0 @@
-[
-    [
-        {
-            "GroupName": "allow_ssh_http_https_codequery-keypair",
-            "GroupId": "sg-050e7fbe2e4c5b7bd"
-        }
-    ]
-]

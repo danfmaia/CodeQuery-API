@@ -159,37 +159,44 @@ package-lock.json
 package.json
 ```
 
-## Environment Variables
+### Environment Variables
 
-The **CodeQuery API** can be configured using the following environment variables defined in the `.env` file located in the root directory. Customizing these variables allows you to specify which project and files the API will interact with, providing flexibility for different use cases.
+The **CodeQuery API** can be configured using environment variables defined in an `.env` file located in the root directory. To set up the environment variables correctly:
 
-```plaintext
-PROJECT_PATH="../my-project"             # Set this to the root path of your project
-AGENTIGNORE_FILES=".agentignore,.gitignore"  # Specify custom ignore patterns for file structure queries
-LOCAL_PORT=5001                          # Port number for running the Core component locally
-API_KEY="<Your API Key>"                 # Set your API key for authentication (if used)
-GATEWAY_BASE_URL="<Your Gateway URL>"    # Public URL for the Gateway component (if used)
+1. **Locate `template.env`**: After cloning the repository, find the `template.env` file in the root directory. This file provides a template for the necessary environment variables.
 
-NGROK_API_URL="http://localhost:4040/api/tunnels"  # Ngrok API URL for querying tunnel status
-TIMEOUT=10                               # Request timeout in seconds
-```
+2. **Rename `template.env` to `.env`**: Before customizing the variables, rename the file:
+
+   ```bash
+   mv template.env .env
+   ```
+
+3. **Customize the Variables**: Open the newly renamed `.env` file and set the variables according to your project’s requirements:
+
+   ```plaintext
+   # Project
+   PROJECT_PATH="../my-project"              # Set this to the root path of your project
+   AGENTIGNORE_FILES=".agentignore,.gitignore"  # Specify custom ignore patterns for file structure queries
+
+   # API and Gateway
+   LOCAL_PORT=5001                          # Port number for running the Core component locally
+   API_KEY="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  # Your personal API key
+   GATEWAY_BASE_URL="https://your-gateway-url.com"  # Set to your Gateway's public URL (if applicable)
+
+   # Ngrok configuration
+   NGROK_API_URL="http://localhost:4040/api/tunnels"  # Ngrok API URL for querying tunnel status
+
+   # Timeout configuration
+   TIMEOUT=10                               # Request timeout in seconds
+   ```
 
 ### Key Variables to Customize
 
-1. **`PROJECT_PATH`**: Set this variable to the root path of the project you want the CodeQuery API to work with. This path should point to the directory where your project is located (e.g., `../my-project/`). By default, it is set to `"./"`, which points to the current folder, usually the CodeQuery project itself.
-2. **`AGENTIGNORE_FILES`**: Use this variable to customize which files and directories should be ignored when querying the project structure. You can specify multiple ignore files separated by commas (e.g., `.agentignore,.gitignore,.dockerignore`).
-
+1. **`PROJECT_PATH`**: Set this variable to the root path of the project you want the CodeQuery API to work with (e.g., `../my-project`).
+2. **`AGENTIGNORE_FILES`**: Use this variable to customize which files and directories should be ignored when querying the project structure.
 3. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
-
-4. **`API_KEY` (if using Gateway)**: Set your personal API key to authenticate requests to the Core and Gateway components.
-
-5. **`GATEWAY_BASE_URL` (if using Gateway)**: Set this to the public URL of your Gateway component if using Gateway for secure access. This variable can also be left empty if not applicable.
-
-After defining the environment variables, ensure they are loaded:
-
-```bash
-source .env
-```
+4. **`API_KEY`**: Set your personal API key to authenticate requests to the Core and Gateway components.
+5. **`GATEWAY_BASE_URL`**: Set this to the public URL of your Gateway component if using Gateway for secure access.
 
 ## Installation and Exposure
 

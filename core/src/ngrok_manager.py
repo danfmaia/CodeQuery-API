@@ -12,53 +12,73 @@ class NgrokManager:
 
     def __init__(self):
         self.refresh_environment_variables()
-        self.terminal_app = os.getenv("TERMINAL_APP", "gnome-terminal")
 
     def refresh_environment_variables(self) -> None:
         """Refresh class attributes from the environment variables."""
-        self.ngrok_api_url = os.getenv("NGROK_API_URL")
-        self.gateway_base_url = os.getenv("GATEWAY_BASE_URL")
-        self.gateway_ngrok_url = self.gateway_base_url + '/ngrok-urls/'
-        self.api_key = os.getenv("API_KEY")
+        self.ngrok_api_url = os.getenv(
+            "NGROK_API_URL", "http://localhost:4040/api/tunnels").strip('"').strip("'")
+        self.gateway_base_url = os.getenv(
+            "GATEWAY_BASE_URL", "").strip('"').strip("'")
+        self.gateway_ngrok_url = f"{self.gateway_base_url}/ngrok-urls/"
+        self.api_key = os.getenv("API_KEY", "").strip('"').strip("'")
         self.timeout = int(os.getenv("TIMEOUT", "10"))
 
-    def start_ngrok(self) -> str:
-        """Start ngrok in a background process and return the public URL."""
+    def check_ngrok_health(self) -> bool:
+        """Basic health check to confirm ngrok's local API is reachable."""
         try:
-            print("Starting ngrok in the background...")
+            print(f"Performing health check on ngrok API: \
+                  {self.ngrok_api_url}")
+            response = requests.get(self.ngrok_api_url, timeout=self.timeout)
+            print(f"Health check response: {response.status_code}")
+            return response.status_code == 200
+        except requests.RequestException as e:
+            print(f"ngrok health check failed: {e}")
+            return False
 
-            # Run ngrok using a context manager to properly manage the process resource
+    def start_ngrok(self) -> str:
+        """Start ngrok in the foreground and verify its initialization."""
+        try:
+            print("Starting ngrok...")
             local_port = os.getenv("LOCAL_PORT", "5001")
-            ngrok_command = ["ngrok", "http", local_port]
+            ngrok_command = f"ngrok http {local_port}"
 
-            with subprocess.Popen(ngrok_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
-                time.sleep(5)  # Give ngrok a moment to start
+            # Start ngrok process
+            print(f"Running command: {ngrok_command}")
+            subprocess.Popen(
+                ngrok_command.split(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
 
-                # Request the ngrok tunnels with a timeout
-                response = requests.get(
-                    self.ngrok_api_url, timeout=self.timeout)
-                response.raise_for_status()  # Raise an exception for bad status codes
+            # Allow ngrok some time to start
+            retries = 5
+            for attempt in range(retries):
+                time.sleep(2)
+                print(f"Attempt {attempt + 1} to check ngrok health...")
+                if self.check_ngrok_health():
+                    print("ngrok health check successful.")
+                    response = requests.get(
+                        self.ngrok_api_url, timeout=self.timeout)
+                    tunnels = response.json().get('tunnels', [])
+                    print(f"Tunnels retrieved: {tunnels}")
 
-                tunnels = response.json().get('tunnels', [])
-                print(f"Tunnel response: {tunnels}")
-                for tunnel in tunnels:
-                    if tunnel.get('proto') == 'https':
-                        ngrok_url = tunnel['public_url']
-                        print(f"ngrok URL: {ngrok_url}")
-                        return ngrok_url
+                    for tunnel in tunnels:
+                        if tunnel.get('proto') == 'https':
+                            ngrok_url = tunnel['public_url']
+                            print(f"ngrok URL found: {ngrok_url}")
+                            return ngrok_url
 
-                print("No valid ngrok URL found.")
-                return None
-
+            print("No valid ngrok URL found after retries.")
+            return None
         except (subprocess.CalledProcessError, requests.RequestException) as e:
             print(f"Error starting ngrok: {e}")
             return None
 
     def setup_ngrok(self) -> None:
         """Initialize ngrok and upload the URL to the gateway."""
+        print("Setting up ngrok...")
         ngrok_url = self.start_ngrok()
 
         if ngrok_url:
+            print(f"ngrok started successfully with URL: {ngrok_url}")
             self.upload_ngrok_url_to_gateway(ngrok_url)
         else:
             print("Failed to start ngrok or retrieve the URL. Exiting setup.")
@@ -124,11 +144,6 @@ class NgrokManager:
                 return self.upload_ngrok_url_to_gateway(ngrok_url)
 
             print("No active ngrok tunnels found. Restarting ngrok...")
-            self.setup_ngrok()
-            return False
-
-        except requests.exceptions.RequestException:
-            print("ngrok is not running. Setting up ngrok...")
             self.setup_ngrok()
             return False
 
