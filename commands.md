@@ -84,7 +84,7 @@ curl -X GET "https://codequery.dev/ngrok-urls/test-key" \
 curl -X POST "https://codequery.dev/ngrok-urls/" \
  -H "Content-Type: application/json" \
  -H "x-api-key: $API_KEY" \
- -d '{"api_key": $API_KEY, "ngrok_url": "https://6e95-2804-1b3-7000-829a-c598-42f-2d99-3b97.ngrok-free.app"}'
+ -d '{"api_key": $API_KEY, "ngrok_url": "https://XXXX.ngrok-free.app"}'
 
 curl -X POST "https://codequery.dev/ngrok-urls/" \
  -H "Content-Type: application/json" \

@@ -321,7 +321,7 @@ To verify the integration between the Core and Gateway components, use the `test
 1. **Run the Integration Test**:
 
    ```bash
-   pytest tests/integration_test.py
+   python tests/integration_test.py
    ```
 
    This will execute the integration test and provide a summary of the results, validating the communication between the Gateway and Core components.
@@ -516,9 +516,9 @@ Conversation Starters:
 
 ## Cases
 
-### 1. CoreQueryAPI (and CodeQueryGPT)
+### 1. CoreQuery API (and CodeQueryGPT)
 
-The **CoreQueryAPI** is the first use case of the CodeQuery API, and it’s the project you’re currently exploring. It serves as a powerful development tool, integrating with AI assistants (such as the [**CodeQueryGPT**](#codequerygpt--creating-your-own-custom-gpt-for-using-this-api)) to support developers by providing a structured way to query project files, understand code dependencies, and interact with large codebases. This project was developed using a **Test-Driven Development (TDD)** approach to ensure the correctness of the AI-generated code.
+The **CoreQuery API** itself is the first use case of the CodeQuery API, and it’s the project you’re currently exploring. It serves as a powerful development tool, integrating with AI assistants (such as the [**CodeQueryGPT**](#codequerygpt--creating-your-own-custom-gpt-for-using-this-api)) to support developers by providing a structured way to query project files, understand code dependencies, and interact with large codebases. This project was developed using a **Test-Driven Development (TDD)** approach to ensure the correctness of the AI-generated code.
 
 ### 2. SkillChrono
 
