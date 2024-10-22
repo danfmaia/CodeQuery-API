@@ -22,6 +22,8 @@ TASK/FEATURE
 Query the relevant file(s) in order to perform this task.
 
 Query the relevant file(s) in order to implement this.
+
+Query the relevant file(s) in order to resolve this issue.
 ```
 
 ```
@@ -61,7 +63,7 @@ Console error:
 """
 """
 
-Query the project structure, then query the relevant files in order to suggest a fix.
+Query the file structure, then the relevant files in order to suggest a fix.
 ```
 
 ```
@@ -83,7 +85,7 @@ Error:
 """
 """
 
-Query the tested file, the test file, and, if necessary, other files that may be useful to debug the error. (Query at least 2 files.)
+Query the tested file, the test file, and, if necessary, other files that may be useful to fix the error. (Query at least 2 files.)
 ```
 
 ```
@@ -93,9 +95,9 @@ Still getting error. Follow this CoT again:
 
 1 test still failing. Follow this CoT:
 
-- Query and analyse the last test results (tests/results.txt).
+- Query the last test results (core/tests/results.txt).
 - Analyse the test results.
-- Query all files that may be useful to debug the error.
+- Query all files that may be useful to fix the error.
 - Suggest a fix to the error.
 ```
 
@@ -219,5 +221,5 @@ Write test cases to validate the correctness of the following function:
 ## Agent KT (pending)
 
 ```
-This chat is getting heavy and slow. I want to start a chat with a new CodeQueryGPT agent. Write a KT prompt to pass the current context to it.
+I want to start a chat with a new CodeQueryGPT agent. Write a KT prompt to pass the current context to it.
 ```

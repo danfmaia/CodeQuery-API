@@ -1,6 +1,17 @@
 # CodeQuery API
 
-![CodeQueryGPT cover artwork](./assets/social_CodeQueryAPI.png)
+![CodeQueryGPT cover artwork](./assets/social/social_CodeQueryAPI.png)
+
+<!-- <p align="center">
+  <a href="https://drive.google.com/uc?export=download&id=1OUQMd_JZbH3uhYcUKikEotjXh7Tw4xyg" target="_blank">
+    <img src="https://via.placeholder.com/600x400?text=Watch+Video+1" alt="Video 1 Thumbnail"/>
+  </a>
+</p>
+<p align="center">
+  <a href="https://drive.google.com/uc?export=download&id=1V_Fp-rF28in-kyD-H_fVQR7jHp4MTQ-V" target="_blank">
+    <img src="https://via.placeholder.com/600x400?text=Watch+Video+2" alt="Video 2 Thumbnail"/>
+  </a>
+</p> -->
 
 **CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, [LLM agents](https://python.langchain.com/v0.1/docs/modules/agents/) can query project structures and retrieve file contents, helping developers explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are accessed, making it an invaluable tool for AI-driven code analysis and development.
 
@@ -159,11 +170,11 @@ package-lock.json
 package.json
 ```
 
-### Environment Variables
+## Environment Variables
 
-The **CodeQuery API** can be configured using environment variables defined in an `.env` file located in the root directory. To set up the environment variables correctly:
+The **CodeQuery API** relies on environment variables, defined in an `.env` file located in the root directory, to configure its behavior. Follow these steps to set up the environment variables correctly:
 
-1. **Locate `template.env`**: After cloning the repository, find the `template.env` file in the root directory. This file provides a template for the necessary environment variables.
+1. **Locate `template.env`**: After cloning the repository, find the `template.env` file in the root directory. This file serves as a template for the necessary environment variables.
 
 2. **Rename `template.env` to `.env`**: Before customizing the variables, rename the file:
 
@@ -171,183 +182,113 @@ The **CodeQuery API** can be configured using environment variables defined in a
    mv template.env .env
    ```
 
-3. **Customize the Variables**: Open the newly renamed `.env` file and set the variables according to your project’s requirements:
+3. **Customize the Variables**: Adjust the variables in the `.env` file according to your project’s requirements:
 
    ```plaintext
-   # Project
-   PROJECT_PATH="../my-project"              # Set this to the root path of your project
-   AGENTIGNORE_FILES=".agentignore,.gitignore"  # Specify custom ignore patterns for file structure queries
+   # Project Settings
+   PROJECT_PATH="../my-project"                  # Set this to the root path of your project
+   AGENTIGNORE_FILES=".agentignore,.gitignore"   # Specify custom ignore patterns for file structure queries
 
-   # API and Gateway
-   LOCAL_PORT=5001                          # Port number for running the Core component locally
-   API_KEY="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  # Your personal API key
-   GATEWAY_BASE_URL="https://your-gateway-url.com"  # Set to your Gateway's public URL (if applicable)
+   # API Integration
+   API_KEY="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"    # Your personal API key (if applicable)
+   GATEWAY_BASE_URL="https://codequery.dev"      # Set to your Gateway's public URL (if applicable)
+   NGROK_AUTHTOKEN="YOUR_NGROK_AUTHTOKEN"        # Your ngrok authtoken for v3.x
 
-   # Ngrok configuration
-   NGROK_API_URL="http://localhost:4040/api/tunnels"  # Ngrok API URL for querying tunnel status
-
-   # Timeout configuration
-   TIMEOUT=10                               # Request timeout in seconds
+   # Other
+   LOCAL_PORT=5001                               # Port number for running the Core component locally
+   TIMEOUT=10                                    # Request timeout in seconds
    ```
 
-### Key Variables to Customize
-
-1. **`PROJECT_PATH`**: Set this variable to the root path of the project you want the CodeQuery API to work with (e.g., `../my-project`).
-2. **`AGENTIGNORE_FILES`**: Use this variable to customize which files and directories should be ignored when querying the project structure.
-3. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
-4. **`API_KEY`**: Set your personal API key to authenticate requests to the Core and Gateway components.
-5. **`GATEWAY_BASE_URL`**: Set this to the public URL of your Gateway component if using Gateway for secure access.
-
-## Installation and Exposure
+## Installation and Usage
 
 ### Prerequisites
 
-- Python 3.8+ (3.12 recommended)
-- Flask
+- Docker
+- Docker Compose (optional)
 
 ### Installation Steps
 
-1. Clone the repository:
+1. **Clone the repository**:
 
    ```bash
    git clone https://github.com/danfmaia/CodeQuery-API.git
    cd CodeQuery-API
    ```
 
-2. Install dependencies:
+2. **Build the Docker image**:
 
    ```bash
-   pip install -r requirements.txt
+   docker build -t codequery_core .
    ```
 
-3. Activate local environment:
+3. **Set up the environment variables**:
 
-   ```bash
-   conda activate venv/
-   ```
+   Refer to the [Environment Variables](#environment-variables) section for a complete guide on setting and customizing variables. Key variables to review include:
 
-4. Choose one of the following exposure options to make the Core component accessible:
+   - `PROJECT_PATH`
+   - `API_KEY`
+   - `NGROK_AUTHTOKEN`
 
-### Exposure Options
+4. **Run the container**:
 
-#### 1. **Using the Gateway Component**
+   - Use Docker to start the container:
 
-- **Description**: This is the recommended option if you need secure access management and dynamic URL synchronization. The Gateway component acts as an intermediary, handling API key validation, ngrok URL synchronization, and request forwarding to the Core component.
-- **Command**:
+     ```bash
+     docker run -d -p 5001:5001 -p 4040:4040 --name codequery_core --env-file .env codequery_core
+     ```
+
+   - This command will run the CodeQuery Core component and expose it on port 5001. Ngrok’s local API will be accessible on port 4040 for tunnel management.
+
+### Testing the API
+
+Once the container is running, you can test the API by sending requests to the exposed endpoints.
+
+- **Retrieve Project Structure**:
+
   ```bash
-  python run.py
+  curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:5001/files/structure
   ```
-- **Use Case**: Ideal for secure, managed access and when operating in environments where dynamic URL management is needed.
 
-#### 2. **Using a Paid ngrok URL**
+- **Retrieve File Contents**:
 
-- **Description**: With a paid ngrok plan, you can set up a permanent public URL, simplifying external access without the Gateway component. This approach only requires running the Core locally and using the ngrok URL for remote access.
+  ```bash
+  curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" \
+  -d '{"file_paths": ["core/run.py", "core/src/ngrok_manager.py"]}' \
+  http://127.0.0.1:5001/files/content
+  ```
+
+For extensive testing, refer to the [Testing Guide](docs/testing.md).
+
+### Other Exposure Options
+
+#### 1. **Using a Paid Ngrok URL**
+
+- **Description**: If you have a paid ngrok plan, set up a permanent public URL by running the Core component locally and using the ngrok URL for external access.
+
 - **Command**:
+
   ```bash
   python run_local.py
   ```
-- **Use Case**: Suitable for users who prefer a straightforward setup using ngrok but need a permanent URL for consistent access.
 
-#### 3. **Setting Up a Self-Hosted Server**
+- **Use Case**: Suitable for users who require a consistent external URL and prefer a simple setup.
 
-- **Description**: For users with a static IP address or a home server, you can host the Core directly using your ISP’s services. This setup avoids the need for ngrok or the Gateway but may require configuring your router and securing the connection with SSL/TLS certificates.
+#### 2. **Setting Up a Self-Hosted Server**
+
+- **Description**: For users with a static IP or home server, you can host the Core directly using your ISP’s services, avoiding ngrok or Gateway usage.
+
 - **Command**:
+
   ```bash
   python run_local.py
   ```
+
 - **Steps**:
-  1. **Check Static IP Availability**: Verify if your ISP offers a static IP address.
-  2. **Port Forwarding**: Configure your router to forward traffic on a specific port (e.g., `5001`) to the local machine running CodeQuery Core.
-  3. **Domain Setup**: Consider using a custom domain to access your server.
-  4. **SSL/TLS Configuration**: Use services like Let’s Encrypt to secure your server.
 
-## Testing the CodeQuery API
-
-This section outlines the environment variable setup and key testing commands for the Core component, including running unit tests and troubleshooting integration issues.
-
-### Environment Variable Setup for Testing
-
-Before running any tests, make sure to configure the necessary environment variables in the `.env` file. Here’s the complete `.env` file template:
-
-```plaintext
-# Project
-
-PROJECT_PATH="./project-path" # Set this to the root path of your project
-AGENTIGNORE_FILES=".agentignore,.gitignore" # Specify file patterns to ignore
-
-# API and Gateway
-
-LOCAL_PORT=5001 # Set your local port for the Core component
-API_KEY="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" # Your personal API key
-GATEWAY_BASE_URL="https://your-gateway-url.com" # Set to your Gateway's public URL
-
-# Other
-
-NGROK_API_URL="http://localhost:4040/api/tunnels" # Ngrok API URL for querying tunnel status
-TIMEOUT=10 # Request timeout in seconds
-```
-
-**Key Variables for Testing**:
-
-1. **`API_KEY`**: The API key to authenticate requests. Set this to your personal API key.
-2. **`LOCAL_PORT`**: The port on which the Core component will run locally (default: `5001`).
-3. **`GATEWAY_BASE_URL`**: The base URL for the Gateway component if testing with the Gateway (e.g., `https://codequery.dev` or your custom Gateway URL).
-
-After setting these variables, run:
-
-```bash
-source .env
-```
-
-### 1. Testing the Core Component Locally
-
-If you’re running the Core component locally (e.g., using `run_local.py`), follow these steps:
-
-#### Health Check (Localhost)
-
-```bash
-curl -X GET http://127.0.0.1:$LOCAL_PORT/
-```
-
-#### Retrieve Project Structure (Localhost)
-
-```bash
-curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
-```
-
-#### Retrieve File Contents (Localhost)
-
-```bash
-curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
-  "file_paths": [
-    "src/app.py",
-    "src/ngrok_manager.py"
-  ]
-}' http://127.0.0.1:$LOCAL_PORT/files/content
-```
-
-### 2. Running Integration Tests
-
-To verify the integration between the Core and Gateway components, use the `tests/integration_test.py` file. This test ensures that the Gateway can correctly interact with the Core API, handling ngrok URL synchronization and request forwarding.
-
-1. **Run the Integration Test**:
-
-   ```bash
-   python tests/integration_test.py
-   ```
-
-   This will execute the integration test and provide a summary of the results, validating the communication between the Gateway and Core components.
-
-### 3. Troubleshooting Common Issues
-
-- **Ngrok URL Mismatch**: If you encounter issues with ngrok URL synchronization between the Core and Gateway, ensure that:
-
-  - The `GATEWAY_UPLOAD_URL` is correctly set in your `.env` file.
-  - The Gateway component is reachable and the API key is valid.
-
-- **Missing Environment Variables**: Ensure all necessary environment variables (`PROJECT_PATH`, `API_KEY`, etc.) are defined in your `.env` file.
-
-For more detailed troubleshooting steps, refer to `gateway/README.md` if you're encountering Gateway-specific issues.
+  1. **Check Static IP Availability**: Ensure your ISP offers a static IP.
+  2. **Port Forwarding**: Configure your router to forward traffic on port 5001 to the local machine.
+  3. **Domain Setup**: Consider using a custom domain for access.
+  4. **SSL/TLS Configuration**: Use services like Let's Encrypt to secure the server.
 
 ## CodeQueryGPT – Creating your own custom GPT for using this API
 
@@ -365,11 +306,18 @@ Name: CodeQueryGPT
 
 Description: Helps developers analyze code, debug issues, and develop features, by leveraging an API to retrieve project structure and files.
 
-Instructions: You are CodeQueryGPT, an AI specialized in actively assisting with software development tasks by querying project files, analyzing code structure, answering questions, and providing direct coding support. You use an external API to fetch the latest file structures and retrieve file contents as needed. Your primary goal is to engage in code analysis, feature development, debugging, and understanding code dependencies, while actively contributing to the coding process. Whether through refactoring, writing new code, or suggesting improvements, you play an active role in the developer's workflow. Your core functionality includes querying the structure of the project to reason about which files are relevant to a user query, retrieving the contents of specific files when requested, and then using the file content to answer queries or write new code directly. Your responses must be clear, concise, and action-oriented, focusing on assisting users with writing or adjusting code, debugging errors, and improving overall code quality. You should prioritize using the information retrieved from the API, interact with the '/files/structure' and '/files/content' endpoints to gather the necessary context, and explain which files are being used. Where relevant, you will identify key dependencies in the codebase, such as files calling others or key functions, and actively engage in writing new code to extend or improve features. Prefer a Chain of Thought (CoT) reasoning approach to break down complex problems into step-by-step solutions when responding.
+Instructions:
+"""
+You are CodeQueryGPT, an AI specialized in assisting with software development tasks by actively querying project files, analyzing code structure, and providing coding support. You use an external API to fetch file structures and retrieve file contents as needed.
+
+Your goal is to assist with code analysis, feature development, debugging, and understanding code dependencies, contributing directly to the development process. You should determine when to query the project structure or relevant files, integrating this step into your workflow naturally.
+
+Use a Chain of Thought (CoT) approach to break down complex tasks into clear steps. When debugging or implementing features, proactively query test results, logs, and relevant files to understand the problem or requirements. Focus on suggesting clear, actionable code changes or improvements while ensuring that you have all the necessary context to perform the task effectively.
+"""
 
 Conversation Starters:
 
-- Query and analyse the project structure and main files.
+- Analyse the code following a thorough CoT process. Use both endpoints.
 - Help me investigate and debug an issue in the code.
 - I need assistance in developing a new feature.
 - Query the main files and help me refactor them for better performance.
@@ -386,12 +334,12 @@ Conversation Starters:
   "openapi": "3.1.0",
   "info": {
     "title": "CodeQuery API",
-    "description": "A Flask API to retrieve the file structure and contents of a project directory",
+    "description": "A Flask API to retrieve the file structure and contents of a project directory.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "<YOUR-PUBLIC-URL>"
+      "url": "https://codequery.dev"
     }
   ],
   "paths": {
@@ -522,9 +470,28 @@ Conversation Starters:
 }
 ```
 
-8. Replace `<YOUR-PUBLIC-URL>` with the URL of your chosen exposure option
+### Screenshots
 
-   Refer to the [Environment Variable Setup for Testing](#environment-variable-setup-for-testing) section for details on configuring the Core component's URL using ngrok, Gateway, or other options.
+#### "Configure" screen
+
+<p>
+  <img width=600 src="https://drive.google.com/uc?export=view&id=13qcof-EX1bFbjvklaNXyRimUJwTz98hU" alt="CodeQueryGPT Configure 1"/>
+</p>
+<p>
+  <img width=600 src="https://drive.google.com/uc?export=view&id=1ZsdCZbGpPThQ4sRTMFJlKAgxz12zXme4" alt="CodeQueryGPT Configure 2"/>
+</p>
+<p>
+  <img width=600 src="https://drive.google.com/uc?export=view&id=1v_1JnFscTwOYD7ZKJPnpfOXq3blONlCr" alt="CodeQueryGPT Configure 3"/>
+</p>
+
+#### "Edit actions" screen
+
+<p>
+  <img width=600 src="https://drive.google.com/uc?export=view&id=1ues8rh0GXGS78pQevACNKMNaTro6EVnT" alt="CodeQueryGPT Edit actions 1"/>
+</p>
+<p>
+  <img width=600 src="https://drive.google.com/uc?export=view&id=1sKmo0_GkNq4e8ITvNcgQtTs3gsHPqE-n" alt="CodeQueryGPT Edit actions 2"/>
+</p>
 
 ## Cases
 
