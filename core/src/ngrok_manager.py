@@ -36,38 +36,37 @@ class NgrokManager:
             return False
 
     def start_ngrok(self) -> str:
-        """Start ngrok in the foreground and verify its initialization."""
+        """Start ngrok in the background and verify its initialization."""
         try:
             print("Starting ngrok...")
             local_port = os.getenv("LOCAL_PORT", "5001")
             ngrok_command = f"ngrok http {local_port}"
 
-            # Start ngrok process
-            print(f"Running command: {ngrok_command}")
+            # Start ngrok in the background without using a 'with' statement
             subprocess.Popen(
-                ngrok_command.split(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                ngrok_command.split(),
+                stdout=subprocess.DEVNULL,  # Suppress output
+                stderr=subprocess.DEVNULL  # Suppress error output
             )
 
             # Allow ngrok some time to start
             retries = 5
             for attempt in range(retries):
-                time.sleep(2)
                 print(f"Attempt {attempt + 1} to check ngrok health...")
+                time.sleep(2)
                 if self.check_ngrok_health():
-                    print("ngrok health check successful.")
                     response = requests.get(
                         self.ngrok_api_url, timeout=self.timeout)
                     tunnels = response.json().get('tunnels', [])
-                    print(f"Tunnels retrieved: {tunnels}")
-
                     for tunnel in tunnels:
                         if tunnel.get('proto') == 'https':
                             ngrok_url = tunnel['public_url']
-                            print(f"ngrok URL found: {ngrok_url}")
+                            print(f"ngrok URL: {ngrok_url}")
                             return ngrok_url
 
             print("No valid ngrok URL found after retries.")
             return None
+
         except (subprocess.CalledProcessError, requests.RequestException) as e:
             print(f"Error starting ngrok: {e}")
             return None

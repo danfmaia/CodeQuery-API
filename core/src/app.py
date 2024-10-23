@@ -1,4 +1,3 @@
-from logging.handlers import SysLogHandler
 import os
 import logging
 import pathspec
@@ -49,19 +48,16 @@ class CodeQueryAPI:
         """Configure logging for the application."""
         self.logger.setLevel(logging.INFO)
 
-        # SysLogHandler for journalctl logging
-        syslog_handler = SysLogHandler(address='/dev/log')
-        syslog_handler.setLevel(logging.INFO)
+        # Use StreamHandler for Docker environment
         formatter = logging.Formatter('%(asctime)s - %(message)s')
-        syslog_handler.setFormatter(formatter)
-        self.logger.addHandler(syslog_handler)
 
-        # Optional: Console handler for development use
-        if os.getenv("ENV", "development") == "development":
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(logging.INFO)
-            console_handler.setFormatter(formatter)
-            self.logger.addHandler(console_handler)
+        # Console handler for container logs
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+        self.logger.addHandler(console_handler)
+
+        # Optional: Additional handlers can be added here if needed
 
     def ensure_ngrok_tunnel(self):
         """Ensure the ngrok tunnel is correctly set up and synchronized."""
@@ -152,9 +148,23 @@ class CodeQueryAPI:
 
             # Log FileService processing
             self.logger.info(
-                "Calling FileService.get_file_content() for paths: %s", file_paths)
+                "Calling FileService.get_file_content() for paths: %s", file_paths
+            )
             content, status = self.file_service.get_file_content(file_paths)
-            self.logger.info("File content retrieved: %s", content)
+
+            # Log each file's path and the number of characters in its content
+            for file_path, file_data in content.items():
+                file_content = file_data.get('content') if isinstance(
+                    file_data, dict) else file_data
+                if isinstance(file_content, str):
+                    content_length = len(file_content)
+                    self.logger.info(
+                        "Retrieved file: %s with %d characters", file_path, content_length
+                    )
+                else:
+                    self.logger.warning(
+                        "Unexpected format for file content: %s", file_path
+                    )
 
             return jsonify(content), status
 

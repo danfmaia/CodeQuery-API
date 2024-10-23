@@ -19,11 +19,15 @@ Proceed. But first, query the project structure.
 ```
 TASK/FEATURE
 
+Query the file structure. Then query…
+
 Query the relevant file(s) in order to perform this task.
 
 Query the relevant file(s) in order to implement this.
 
-Query the relevant file(s) in order to resolve this issue.
+Query the relevant file(s) in order to apply this tweak.
+
+Query the relevant file(s) in order to solve this issue.
 ```
 
 ```
@@ -93,11 +97,11 @@ Well done! Now to the next error...
 
 Still getting error. Follow this CoT again:
 
-1 test still failing. Follow this CoT:
+1 unit test is failing. Follow this CoT:
 
 - Query the last test results (core/tests/results.txt).
 - Analyse the test results.
-- Query all files that may be useful to fix the error.
+- Query the relevant file(s) in order to fix the error.
 - Suggest a fix to the error.
 ```
 

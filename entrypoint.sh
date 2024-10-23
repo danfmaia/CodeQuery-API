@@ -2,7 +2,7 @@
 
 # Ensure ngrok is started and configured correctly
 echo "Starting ngrok..."
-ngrok http 5001 &
+ngrok http 5001 > /dev/null 2>&1 &
 
 # Wait for ngrok to be ready
 sleep 5
