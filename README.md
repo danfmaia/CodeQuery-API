@@ -2,16 +2,19 @@
 
 ![CodeQueryGPT cover artwork](./assets/social/social_CodeQueryAPI.png)
 
-<!-- <p align="center">
-  <a href="https://drive.google.com/uc?export=download&id=1OUQMd_JZbH3uhYcUKikEotjXh7Tw4xyg" target="_blank">
-    <img src="https://via.placeholder.com/600x400?text=Watch+Video+1" alt="Video 1 Thumbnail"/>
-  </a>
+**Usage demo 1:**
+
+<p>
+  <img src="./assets/demo/GPT_usage_1.gif" alt="CodeQueryGPT usage GIF 1"/>
 </p>
-<p align="center">
-  <a href="https://drive.google.com/uc?export=download&id=1V_Fp-rF28in-kyD-H_fVQR7jHp4MTQ-V" target="_blank">
-    <img src="https://via.placeholder.com/600x400?text=Watch+Video+2" alt="Video 2 Thumbnail"/>
-  </a>
-</p> -->
+
+**Usage demo 2:**
+
+<p>
+  <img src="./assets/demo/GPT_usage_2.gif" alt="CodeQueryGPT usage GIF 2"/>
+</p>
+
+## Introduction
 
 **CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, [LLM agents](https://python.langchain.com/v0.1/docs/modules/agents/) can query project structures and retrieve file contents, helping developers explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are accessed, making it an invaluable tool for AI-driven code analysis and development.
 
@@ -320,7 +323,7 @@ Conversation Starters:
 - Analyse the code following a thorough CoT process. Use both endpoints.
 - Help me investigate and debug an issue in the code.
 - I need assistance in developing a new feature.
-- Query the main files and help me refactor them for better performance.
+- Query the main files. Then pick some method(s) refactor them for better performance.
 
 ```
 
