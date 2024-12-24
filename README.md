@@ -1,5 +1,7 @@
 # CodeQuery API
 
+> Note: For the gateway component of this project, [check this repository](https://github.com/danfmaia/CodeQuery-Gateway).
+
 ![CodeQueryGPT cover artwork](./assets/social/social_CodeQueryAPI.png)
 
 **Usage demo 1:**
