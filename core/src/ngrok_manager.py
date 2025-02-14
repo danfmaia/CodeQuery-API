@@ -1,12 +1,11 @@
 import os
-import subprocess
 import time
 import requests
 
 
 class NgrokManager:
     """
-    Class responsible for managing ngrok tunnels, including starting the tunnel,
+    Class responsible for managing ngrok tunnels, including monitoring the tunnel,
     uploading the URL to the gateway, and verifying the status of the ngrok connection.
     """
 
@@ -26,61 +25,39 @@ class NgrokManager:
     def check_ngrok_health(self) -> bool:
         """Basic health check to confirm ngrok's local API is reachable."""
         try:
-            print(f"Performing health check on ngrok API: \
-                  {self.ngrok_api_url}")
+            print(f"Checking ngrok API: {self.ngrok_api_url}")
             response = requests.get(self.ngrok_api_url, timeout=self.timeout)
-            print(f"Health check response: {response.status_code}")
             return response.status_code == 200
         except requests.RequestException as e:
             print(f"ngrok health check failed: {e}")
             return False
 
-    def start_ngrok(self) -> str:
-        """Start ngrok in the background and verify its initialization."""
+    def get_ngrok_url(self) -> str:
+        """Get the current ngrok URL."""
         try:
-            print("Starting ngrok...")
-            local_port = os.getenv("LOCAL_PORT", "5001")
-            ngrok_command = f"ngrok http {local_port}"
-
-            # Start ngrok in the background without using a 'with' statement
-            subprocess.Popen(
-                ngrok_command.split(),
-                stdout=subprocess.DEVNULL,  # Suppress output
-                stderr=subprocess.DEVNULL  # Suppress error output
-            )
-
-            # Allow ngrok some time to start
-            retries = 5
-            for attempt in range(retries):
-                print(f"Attempt {attempt + 1} to check ngrok health...")
-                time.sleep(2)
-                if self.check_ngrok_health():
-                    response = requests.get(
-                        self.ngrok_api_url, timeout=self.timeout)
-                    tunnels = response.json().get('tunnels', [])
-                    for tunnel in tunnels:
-                        if tunnel.get('proto') == 'https':
-                            ngrok_url = tunnel['public_url']
-                            print(f"ngrok URL: {ngrok_url}")
-                            return ngrok_url
-
-            print("No valid ngrok URL found after retries.")
+            response = requests.get(self.ngrok_api_url, timeout=self.timeout)
+            tunnels = response.json().get('tunnels', [])
+            for tunnel in tunnels:
+                if tunnel.get('proto') == 'https':
+                    return tunnel['public_url']
             return None
-
-        except (subprocess.CalledProcessError, requests.RequestException) as e:
-            print(f"Error starting ngrok: {e}")
+        except requests.RequestException:
             return None
 
     def setup_ngrok(self) -> None:
-        """Initialize ngrok and upload the URL to the gateway."""
-        print("Setting up ngrok...")
-        ngrok_url = self.start_ngrok()
-
-        if ngrok_url:
-            print(f"ngrok started successfully with URL: {ngrok_url}")
-            self.upload_ngrok_url_to_gateway(ngrok_url)
-        else:
-            print("Failed to start ngrok or retrieve the URL. Exiting setup.")
+        """Wait for ngrok to be ready and upload the URL to the gateway."""
+        print("Waiting for ngrok to be ready...")
+        retries = 30
+        for attempt in range(retries):
+            if self.check_ngrok_health():
+                ngrok_url = self.get_ngrok_url()
+                if ngrok_url:
+                    print(f"ngrok is ready with URL: {ngrok_url}")
+                    self.upload_ngrok_url_to_gateway(ngrok_url)
+                    return
+            print(f"Waiting... ({attempt + 1}/{retries})")
+            time.sleep(1)
+        print("Failed to connect to ngrok after retries.")
 
     def upload_ngrok_url_to_gateway(self, ngrok_url: str) -> bool:
         """Upload the ngrok URL to the gateway server."""
@@ -88,13 +65,13 @@ class NgrokManager:
         api_key = self.api_key
 
         if not gateway_url or not api_key:
-            print(f"Missing GATEWAY_NGROK_URL (\
-                  {gateway_url}) or API_KEY ({api_key})")
+            print(
+                f"Missing GATEWAY_NGROK_URL ({gateway_url}) or API_KEY ({api_key})")
             return False
 
         try:
-            print(f"Uploading ngrok URL ({ngrok_url}) to Gateway (\
-                  {gateway_url}) with API Key: {api_key}...")
+            print(
+                f"Uploading ngrok URL ({ngrok_url}) to Gateway ({gateway_url})")
             response = requests.post(
                 gateway_url,
                 json={'api_key': api_key, 'ngrok_url': ngrok_url},
@@ -103,10 +80,6 @@ class NgrokManager:
             )
             response.raise_for_status()
             print("Successfully uploaded ngrok URL to Gateway.")
-            # Confirm Gateway has the new URL
-            confirm_response = requests.get(
-                f"{gateway_url}/{api_key}", headers={'X-API-KEY': api_key}, timeout=self.timeout)
-            print(f"Confirmed Gateway cache update: {confirm_response.json()}")
             return True
         except requests.exceptions.RequestException as e:
             print(f"Failed to upload ngrok URL to Gateway: {str(e)}")
@@ -118,35 +91,17 @@ class NgrokManager:
         Returns:
             bool: Whether ngrok is correctly set up and gateway is updated.
         """
-        self.refresh_environment_variables()  # Ensure class variables are up-to-date
+        self.refresh_environment_variables()
         print("Checking ngrok status...")
-        try:
-            response = requests.get(self.ngrok_api_url, timeout=self.timeout)
-            response.raise_for_status()
-            tunnels = response.json().get("tunnels", [])
-            print(f"Tunnel response: {tunnels}")
 
-            if tunnels:
-                ngrok_url = tunnels[0].get("public_url")
-                print(f"ngrok is running: {ngrok_url}")
-
-                if self.gateway_base_url is None:
-                    print("Warning: GATEWAY_BASE_URL is not correctly set.")
-                    return False
-
-                if ngrok_url.strip().lower() == self.gateway_base_url.strip().lower():
-                    print("ngrok URL is already synchronized with the gateway.")
-                    return True
-
-                print(f"ngrok URL has changed. Updating gateway with new URL: \
-                      {ngrok_url}")
-                return self.upload_ngrok_url_to_gateway(ngrok_url)
-
-            print("No active ngrok tunnels found. Restarting ngrok...")
-            self.setup_ngrok()
+        if not self.check_ngrok_health():
+            print("ngrok is not responding. Please check if it's running.")
             return False
 
-        except requests.exceptions.RequestException:
-            print("ngrok is not running. Setting up ngrok...")
-            self.setup_ngrok()
+        ngrok_url = self.get_ngrok_url()
+        if not ngrok_url:
+            print("No active ngrok tunnels found.")
             return False
+
+        print(f"ngrok is running: {ngrok_url}")
+        return self.upload_ngrok_url_to_gateway(ngrok_url)
