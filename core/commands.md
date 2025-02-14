@@ -1,13 +1,84 @@
 # Commands
 
-## Running
+## Quick Start
 
-docker rm -f codequery_core 2>/dev/null || true &&\
- docker run -d -p 5001:5001 --name codequery_core -v "$(pwd):/app" codequery_core
+```bash
+# Initialize environment
+make init
 
-lsof -i :$LOCAL_PORT && ps aux | grep ngrok
+# Build and run
+make build
+make run
 
+# View logs
+make logs
+
+# Stop the container
+make stop
+
+# Run tests
+make test
+
+# Show all available commands
+make help
+```
+
+## Manual Commands (Alternative)
+
+### Running Manually
+
+```bash
+# Build the image
+docker build -t codequery_core --build-arg NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN .
+
+# Run the container
+docker run --rm -d -p 5001:5001 -p 4040:4040 --name codequery_core -v "$(pwd):/app" --env-file .env codequery_core
+
+# View logs
+docker logs -f codequery_core
+
+# Stop the container
+docker stop codequery_core
+```
+
+### Testing
+
+```bash
+# Run tests
+docker run --rm codequery_core pytest core/tests
+```
+
+### API Testing
+
+#### Health check (Localhost)
+
+```bash
+curl -X GET http://127.0.0.1:$LOCAL_PORT/
+```
+
+#### GET /files/structure (Localhost)
+
+```bash
+curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:$LOCAL_PORT/files/structure
+```
+
+#### POST /files/content (Localhost)
+
+```bash
+curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" -d '{
+  "file_paths": [
+    "core/src/app.py",
+    "core/src/ngrok_manager.py"
+  ]
+}' http://127.0.0.1:$LOCAL_PORT/files/content
+```
+
+### Ngrok URLs
+
+```bash
+# Get current ngrok URL
 curl --silent http://127.0.0.1:4040/api/tunnels | grep -Eo 'https://[a-zA-Z0-9-]+\.ngrok-free\.app'
+```
 
 ## Testing
 

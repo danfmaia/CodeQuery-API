@@ -23,7 +23,7 @@
 ## Features
 
 - **Designed for AI Assistants**: This API was specifically designed to integrate with AI assistants such as custom GPTs, providing them with efficient access to project file structures and contents.
-- **Retrieve Project Structure**: Get a detailed view of the project’s directories and files.
+- **Retrieve Project Structure**: Get a detailed view of the project's directories and files.
 - **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent paths.
 - **Custom Ignore Patterns**: Utilize `.agentignore` and/or `.gitignore` for specifying which files or directories to exclude from the structure retrieval.
 
@@ -60,7 +60,7 @@
 
 - **Error Scenarios**:
 
-  - **500 Internal Server Error**: If there’s a failure in reading the directory structure, such as permission issues or corrupted files, an internal error response will be returned.
+  - **500 Internal Server Error**: If there's a failure in reading the directory structure, such as permission issues or corrupted files, an internal error response will be returned.
 
   **Example Error Response**:
 
@@ -131,7 +131,7 @@
   }
   ```
 
-  - **500 Internal Server Error**: If there’s a failure in reading a file due to permissions, encoding issues, or other OS-level errors.
+  - **500 Internal Server Error**: If there's a failure in reading a file due to permissions, encoding issues, or other OS-level errors.
 
   **Example Error Response**:
 
@@ -185,7 +185,7 @@ The **CodeQuery API** relies on environment variables, defined in an `.env` file
    mv template.env .env
    ```
 
-3. **Customize the Variables**: Adjust the variables in the `.env` file according to your project’s requirements:
+3. **Customize the Variables**: Adjust the variables in the `.env` file according to your project's requirements:
 
    ```plaintext
    # Project Settings
@@ -207,9 +207,9 @@ The **CodeQuery API** relies on environment variables, defined in an `.env` file
 ### Prerequisites
 
 - Docker
-- Docker Compose (optional)
+- Make
 
-### Installation Steps
+### Quick Start
 
 1. **Clone the repository**:
 
@@ -218,29 +218,34 @@ The **CodeQuery API** relies on environment variables, defined in an `.env` file
    cd CodeQuery-API
    ```
 
-2. **Build the Docker image**:
+2. **Initialize the environment**:
 
    ```bash
-   docker build -t codequery_core .
+   make init
    ```
 
-3. **Set up the environment variables**:
+   This will create a `.env` file from the template. Edit it with your settings.
 
-   Refer to the [Environment Variables](#environment-variables) section for a complete guide on setting and customizing variables. Key variables to review include:
+3. **Build and run**:
 
-   - `PROJECT_PATH`
-   - `API_KEY`
-   - `NGROK_AUTHTOKEN`
+   ```bash
+   make build  # Build the Docker image
+   make run    # Run the Core container
+   ```
 
-4. **Run the container**:
+4. **View logs**:
 
-   - Use Docker to start the container:
+   ```bash
+   make logs   # View container logs
+   ```
 
-     ```bash
-     docker run -d -p 5001:5001 -p 4040:4040 --name codequery_core --env-file .env codequery_core
-     ```
+5. **Other useful commands**:
 
-   - This command will run the CodeQuery Core component and expose it on port 5001. Ngrok’s local API will be accessible on port 4040 for tunnel management.
+   ```bash
+   make help   # Show all available commands
+   make stop   # Stop the container
+   make test   # Run tests
+   ```
 
 ### Testing the API
 
@@ -278,7 +283,7 @@ For extensive testing, refer to the [Testing Guide](docs/testing.md).
 
 #### 2. **Setting Up a Self-Hosted Server**
 
-- **Description**: For users with a static IP or home server, you can host the Core directly using your ISP’s services, avoiding ngrok or Gateway usage.
+- **Description**: For users with a static IP or home server, you can host the Core directly using your ISP's services, avoiding ngrok or Gateway usage.
 
 - **Command**:
 
@@ -500,7 +505,7 @@ Conversation Starters:
 
 ### 1. CoreQuery API (and CodeQueryGPT)
 
-The **CoreQuery API** itself is the first use case of the CodeQuery API, and it’s the project you’re currently exploring. It serves as a powerful development tool, integrating with AI assistants (such as the [**CodeQueryGPT**](#codequerygpt--creating-your-own-custom-gpt-for-using-this-api)) to support developers by providing a structured way to query project files, understand code dependencies, and interact with large codebases. This project was developed using a **Test-Driven Development (TDD)** approach to ensure the correctness of the AI-generated code.
+The **CoreQuery API** itself is the first use case of the CodeQuery API, and it's the project you're currently exploring. It serves as a powerful development tool, integrating with AI assistants (such as the [**CodeQueryGPT**](#codequerygpt--creating-your-own-custom-gpt-for-using-this-api)) to support developers by providing a structured way to query project files, understand code dependencies, and interact with large codebases. This project was developed using a **Test-Driven Development (TDD)** approach to ensure the correctness of the AI-generated code.
 
 ### 2. SkillChrono
 
