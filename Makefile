@@ -1,33 +1,81 @@
 # Colors for better visibility
 GREEN := \033[0;32m
 RED := \033[0;31m
+YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-# Include environment variables from .env
-include .env
-export
-
-.PHONY: help init build run stop logs test integration-test
+.PHONY: help init build run stop logs test integration-test clean
 
 help: ## Show this help message
 	@echo "CodeQuery Core - Quick Start Guide"
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  - Docker"
+	@echo "  - Make"
+	@echo "  - curl"
+	@echo "  - ngrok account (free tier is sufficient)"
+	@echo "    Get your authtoken at https://dashboard.ngrok.com/get-started/your-authtoken"
+	@echo ""
 	@echo "Usage:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  make %-10s %s\n", $$1, $$2}'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  make %-20s%s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-init: ## Setup environment (copy template.env to .env)
-	@if [ ! -f .env ]; then \
-		cp template.env .env; \
-		echo "$(GREEN)Created .env file. Please edit it with your settings.$(NC)"; \
+init: ## Setup environment and configure API key
+	@if [ -f .env ]; then \
+		echo "$(YELLOW)Warning: .env file already exists.$(NC)"; \
+		read -p "Do you want to overwrite it? [y/N] " answer; \
+		if [ "$$answer" != "y" ] && [ "$$answer" != "Y" ]; then \
+			echo "Keeping existing .env file."; \
+			exit 0; \
+		fi; \
+	fi; \
+	cp template.env .env; \
+	echo "$(GREEN)Created .env file from template.$(NC)"; \
+	echo "$(GREEN)Next steps:$(NC)"; \
+	echo "1. Get your API key by running:"; \
+	echo "   curl -X POST https://codequery.dev/api-keys/generate"; \
+	echo "2. Add your API key to .env as API_KEY=your_key"; \
+	echo "3. Set PROJECT_PATH in .env to the root of the project you want CodeQuery to help you with"; \
+	echo "   Example: PROJECT_PATH=/path/to/your/project"; \
+	echo "4. Add your ngrok authtoken to .env as NGROK_AUTHTOKEN=your_token"; \
+	echo "5. Run 'make build'"
+
+clean: ## Remove .env file and start fresh
+	@if [ -f .env ]; then \
+		echo "$(YELLOW)Warning: This will remove your .env file.$(NC)"; \
+		read -p "Are you sure? [y/N] " answer; \
+		if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+			rm .env; \
+			echo "$(GREEN).env file removed. Run 'make init' to start fresh.$(NC)"; \
+		else \
+			echo "Operation cancelled."; \
+		fi; \
 	else \
-		echo "$(GREEN).env file already exists.$(NC)"; \
+		echo "No .env file found."; \
 	fi
+
+# Load environment variables after init
+ifneq ($(wildcard .env),)
+    include .env
+    export
+endif
 
 build: ## Build the Docker image
-	@echo "Building Docker image..."
-	@if [ -z "$(NGROK_AUTHTOKEN)" ]; then \
-		echo "$(RED)Error: NGROK_AUTHTOKEN is not set in .env file$(NC)"; \
+	@if [ ! -f .env ]; then \
+		echo "$(RED)Error: .env file not found. Run 'make init' first.$(NC)"; \
 		exit 1; \
 	fi
+	@if [ -z "$(NGROK_AUTHTOKEN)" ]; then \
+		echo "$(RED)Error: NGROK_AUTHTOKEN is not set in .env file$(NC)"; \
+		echo "Please edit .env and add your ngrok authtoken before building."; \
+		exit 1; \
+	fi
+	@if [ -z "$(API_KEY)" ]; then \
+		echo "$(RED)Error: API_KEY is not set in .env file$(NC)"; \
+		echo "Please edit .env and add your API key before building."; \
+		echo "You can generate one with: curl -X POST https://codequery.dev/api-keys/generate"; \
+		exit 1; \
+	fi
+	@echo "Building Docker image..."
 	docker build -t codequery_core --build-arg NGROK_AUTHTOKEN=$(NGROK_AUTHTOKEN) .
 	@echo "$(GREEN)Build completed.$(NC)"
 
