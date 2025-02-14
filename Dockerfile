@@ -16,7 +16,7 @@ RUN apt-get update && \
 
 # Set up ngrok authtoken (using the v3.x command)
 ARG NGROK_AUTHTOKEN
-RUN ngrok config add-authtoken $NGROK_AUTHTOKEN
+RUN ngrok config add-authtoken "${NGROK_AUTHTOKEN}"
 
 # Install virtualenv to manage Python dependencies inside the container
 RUN pip install virtualenv
