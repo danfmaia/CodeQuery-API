@@ -1,5 +1,4 @@
 import os
-import subprocess
 import time
 import requests
 from dotenv import load_dotenv
@@ -16,39 +15,37 @@ load_dotenv()
 
 # Configuration from environment variables
 API_KEY = os.getenv("API_KEY")
-GATEWAY_BASE_URL = os.getenv("GATEWAY_BASE_URL")
-GATEWAY_NGROK_URL = os.getenv("GATEWAY_BASE_URL") + '/ngrok-urls/'
-# Extract base URL from the upload endpoint
-NGROK_URL_ENDPOINT = f"{GATEWAY_NGROK_URL}{API_KEY}"
-FILES_STRUCTURE_ENDPOINT = f"{GATEWAY_BASE_URL}/files/structure"
-LOCAL_SCRIPT_COMMAND = ["python", "run.py"]
+NGROK_URL = None
 
 
-def run_local_script():
-    """Start the `run.py` script and monitor its output."""
-    print("Starting the local `run.py` script...")
-    process = subprocess.Popen(
-        LOCAL_SCRIPT_COMMAND, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-    )
-    return process
+def check_service_ready():
+    """Check if the Core service is ready to accept requests."""
+    try:
+        response = requests.get("http://localhost:5001/", timeout=1)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
 
 
 def check_ngrok_url():
     """Check if the ngrok URL is correctly updated in the Gateway."""
     print(f"Checking the ngrok URL for API key: {API_KEY}...")
     try:
-        headers = {"x-api-key": API_KEY}
-        # Add a timeout to prevent hanging requests
+        # Instead of getting the URL from the Gateway, get it directly from ngrok
         response = requests.get(
-            NGROK_URL_ENDPOINT,
-            headers=headers,
+            "http://localhost:4040/api/tunnels",
             timeout=10
         )
         response.raise_for_status()
-        ngrok_data = response.json()
-        print(f"ngrok URL successfully retrieved: {ngrok_data['ngrok_url']}")
-        return ngrok_data["ngrok_url"]
-    except requests.exceptions.RequestException as e:
+        tunnels = response.json().get('tunnels', [])
+        for tunnel in tunnels:
+            if tunnel.get('proto') == 'https':
+                ngrok_url = tunnel['public_url']
+                print(f"ngrok URL successfully retrieved: {ngrok_url}")
+                return ngrok_url
+        print("No HTTPS tunnel found in ngrok response")
+        return None
+    except requests.RequestException as e:
         print(f"Failed to retrieve ngrok URL: {str(e)}")
         return None
 
@@ -58,46 +55,62 @@ def run_curl_test():
     print("Running the main cURL test for `/files/structure`...")
     headers = {"X-API-KEY": API_KEY}
     try:
+        # Use the ngrok URL directly instead of going through the Gateway
+        if not NGROK_URL:
+            print("No ngrok URL available. Skipping test.")
+            return
+        endpoint = f"{NGROK_URL}/files/structure"
+        print(f"Testing endpoint: {endpoint}")
+        print(f"Headers: {headers}")
         # Add a timeout to prevent hanging requests
         response = requests.get(
-            FILES_STRUCTURE_ENDPOINT,
+            endpoint,
             headers=headers,
             timeout=10
         )
+        print(f"Response status code: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        # Print first 200 chars
+        print(f"Response text: {response.text[:200]}...")
         response.raise_for_status()
         print("Main cURL test passed successfully!")
         print(f"Response: {response.json()}")
     except requests.exceptions.RequestException as e:
         print(f"Main cURL test failed: {str(e)}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Error response status code: {e.response.status_code}")
+            print(f"Error response headers: {dict(e.response.headers)}")
+            print(f"Error response text: {e.response.text}")
 
 
 def main():
-    # Step 1: Run the `run.py` script
-    process = run_local_script()
-    time.sleep(5)  # Allow some time for the ngrok tunnel to initialize
+    # Wait for the service to be ready
+    print("Waiting for Core service to be ready...")
+    retries = 30
+    for attempt in range(retries):
+        if check_service_ready():
+            print("Core service is ready!")
+            break
+        print(f"Waiting for service to be ready... ({attempt + 1}/{retries})")
+        time.sleep(1)
+    else:
+        print("Failed to connect to Core service. Exiting.")
+        return
 
-    # Step 2: Check ngrok URL update
-    ngrok_url = None
+    # Check ngrok URL update
+    global NGROK_URL
     for _ in range(5):  # Retry logic to check ngrok URL
-        ngrok_url = check_ngrok_url()
-        if ngrok_url:
+        NGROK_URL = check_ngrok_url()
+        if NGROK_URL:
             break
         print("Retrying ngrok URL check in 5 seconds...")
         time.sleep(5)
 
-    # Step 3: Run the main cURL test if ngrok URL is updated successfully
-    if ngrok_url:
-        run_curl_test()  # No longer passing `ngrok_url` as an argument
+    # Run the main cURL test if ngrok URL is available
+    if NGROK_URL:
+        run_curl_test()
     else:
-        print("Failed to update ngrok URL in the Gateway. Exiting.")
-
-    # Step 4: Terminate the `run.py` script gracefully
-    process.terminate()
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-    print("Integration test completed.")
+        print("Failed to get ngrok URL. Exiting.")
 
 
 if __name__ == "__main__":

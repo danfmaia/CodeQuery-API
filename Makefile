@@ -62,4 +62,11 @@ integration-test: ## Run integration tests
 		kill -9 $$(lsof -t -i :4040); \
 		echo "Released port 4040"; \
 	fi
-	docker run --rm -p 5001:5001 -p 4040:4040 --env-file .env codequery_core python core/tests/integration_test.py
+	@echo "Starting Core service..."
+	docker run --rm -d -p 5001:5001 -p 4040:4040 --name codequery_core -v "$(shell pwd):/app" --env-file .env codequery_core
+	@echo "Waiting for Core service to start..."
+	@sleep 5
+	@echo "Running integration test..."
+	docker exec codequery_core python core/tests/integration_test.py
+	@echo "Stopping Core service..."
+	docker stop codequery_core
