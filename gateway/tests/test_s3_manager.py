@@ -20,7 +20,7 @@ class TestS3Manager(unittest.TestCase):
 
         # Test client initialization
         s3_client = self.s3_manager.get_s3_client()
-        mock_boto_client.assert_called_once_with('s3')
+        mock_boto_client.assert_called_once_with('s3', region_name='sa-east-1')
         self.assertEqual(s3_client, mock_s3_client)
 
     def test_load_ngrok_url(self):

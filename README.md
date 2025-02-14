@@ -228,26 +228,84 @@ The **CodeQuery API** relies on environment variables, defined in an `.env` file
 
    This will create a `.env` file from the template. Edit it with your settings.
 
-3. **Build and run**:
+3. **Get an API Key**:
+   You have two options:
+
+   a) **Using the Gateway** (Recommended):
+
+   ```bash
+   # Generate a new API key
+   curl -X POST https://codequery.dev/api-keys/generate
+   ```
+
+   The response will include your API key. Add it to your `.env` file:
+
+   ```bash
+   API_KEY="your-generated-key"
+   ```
+
+   b) **Local Development** (Without Gateway):
+   For local development without the Gateway, you can use any secure random string as your API key.
+   Add it to your `.env` file:
+
+   ```bash
+   API_KEY="your-development-key"
+   ```
+
+4. **Build and Run**:
 
    ```bash
    make build  # Build the Docker image
    make run    # Run the Core container
    ```
 
-4. **View logs**:
+5. **Test the API**:
 
    ```bash
-   make logs   # View container logs
+   # Get the project structure
+   curl -H "X-API-KEY: $API_KEY" http://localhost:5001/files/structure
+
+   # Get specific file contents
+   curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "X-API-KEY: $API_KEY" \
+     -d '{"file_paths": ["README.md"]}' \
+     http://localhost:5001/files/content
    ```
 
-5. **Other useful commands**:
+Example Response (files/structure):
 
+```json
+{
+  ".": {
+    "directories": ["core", "docs", "gateway"],
+    "files": ["README.md", "Makefile", "Dockerfile"]
+  },
+  "core": {
+    "directories": ["src", "tests"],
+    "files": ["requirements.txt", "run.py"]
+  }
+}
+```
+
+Example Response (files/content):
+
+```json
+{
+  "README.md": "# CodeQuery API\n\nA powerful API for querying and analyzing codebases...",
+  "status": "success"
+}
+```
+
+6. **Other Useful Commands**:
    ```bash
    make help   # Show all available commands
    make stop   # Stop the container
    make test   # Run tests
+   make logs   # View container logs
    ```
+
+For more detailed information about the API endpoints and advanced usage, see the [Documentation](docs/README.md).
 
 ### Testing the API
 

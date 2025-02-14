@@ -44,13 +44,43 @@ class S3Manager:
             # S3 automatically decrypts the data when using SSE-KMS
             raw_data = response['Body'].read().decode('utf-8')
             api_keys = json.loads(raw_data)
+
+            # Convert legacy format if needed
+            if api_keys and isinstance(next(iter(api_keys.values())), str):
+                updated_keys = {}
+                for key, value in api_keys.items():
+                    updated_keys[key] = {
+                        "created_at": None,  # Legacy keys don't have creation time
+                        "last_used": None,
+                        "expires_at": None,  # No expiration for legacy keys
+                        "rate_limit": {
+                            "requests_per_minute": 60,  # Default rate limit
+                            "current_minute": None,
+                            "minute_requests": 0
+                        },
+                        "total_requests": 0
+                    }
+                api_keys = updated_keys
+            elif api_keys:
+                # Update existing keys with new fields if they don't exist
+                for key in api_keys:
+                    if "expires_at" not in api_keys[key]:
+                        api_keys[key]["expires_at"] = None
+                    if "rate_limit" not in api_keys[key]:
+                        api_keys[key]["rate_limit"] = {
+                            "requests_per_minute": 60,
+                            "current_minute": None,
+                            "minute_requests": 0
+                        }
+                    if "total_requests" not in api_keys[key]:
+                        api_keys[key]["total_requests"] = 0
+
             return api_keys
 
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
                 self.logger.warning("API keys file not found in S3.")
                 return None
-            # Fixed logging
             self.logger.error("ClientError while accessing S3: %s", str(e))
             raise e
 
@@ -64,7 +94,8 @@ class S3Manager:
         """
         try:
             # Convert API keys dictionary to JSON
-            raw_data = json.dumps(api_keys)
+            # Handle datetime serialization
+            raw_data = json.dumps(api_keys, default=str)
 
             # Store the data in S3 with server-side encryption
             self.s3_client.put_object(
@@ -78,6 +109,7 @@ class S3Manager:
             return {"status": "success", "message": "API keys stored securely in S3"}
 
         except ClientError as e:
+            self.logger.error("Error storing API keys in S3: %s", str(e))
             raise e
 
     def load_ngrok_url(self, api_key):
