@@ -1,3 +1,8 @@
 {
-  "CodeGPT.apiKey": "CodeGPT Plus Beta"
+  "CodeGPT.apiKey": "CodeGPT Plus Beta",
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#0C3237",
+    "titleBar.activeBackground": "#11464D",
+    "titleBar.activeForeground": "#F3FBFC"
+  }
 }
