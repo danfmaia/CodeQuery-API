@@ -29,8 +29,14 @@ class FileService:
 
     def is_ignored(self, path, ignore_spec):
         """Check if a path should be ignored based on the loaded patterns."""
+        if not ignore_spec:
+            return False
+
         normalized_path = os.path.normpath(path)
-        return ignore_spec.match_file(normalized_path) if ignore_spec else False
+        # Ensure directory paths end with a slash for proper matching
+        if os.path.isdir(os.path.join(self.project_path, normalized_path)):
+            normalized_path = normalized_path.rstrip('/') + '/'
+        return ignore_spec.match_file(normalized_path)
 
     def get_directory_structure(self):
         """Returns the project directory structure as a dictionary."""
@@ -52,8 +58,12 @@ class FileService:
                     os.path.normpath(os.path.join(folder, d)), ignore_spec)]
 
                 # Keep ignore files in the structure even if they match ignore patterns
-                ignore_file_names = [os.path.basename(f) for f in ignore_files]
-                filenames = [f for f in filenames if f in ignore_file_names or not self.is_ignored(
+                ignore_file_names = [os.path.basename(
+                    f.strip()) for f in ignore_files]
+                filenames = [f for f in filenames if (
+                    # Include ignore files in root directory regardless of ignore patterns
+                    (f in ignore_file_names and folder == ".")
+                ) or not self.is_ignored(
                     os.path.normpath(os.path.join(folder, f)), ignore_spec)]
 
                 # Only include non-empty directories and files in the structure
