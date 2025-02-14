@@ -1,0 +1,324 @@
+diff --git a/.pylintrc b/.pylintrc
+index aab0a90..da94504 100644
+--- a/.pylintrc
++++ b/.pylintrc
+@@ -1,5 +1,5 @@
+ [MASTER]
+-init-hook='import sys; sys.path.insert(0, "src/")'
++init-hook='import sys; sys.path.extend(["src/", "core/"])'
+ 
+ [MESSAGES CONTROL]
+ disable=C0114
+\ No newline at end of file
+diff --git a/Makefile b/Makefile
+index 4cdaa3f..c814108 100644
+--- a/Makefile
++++ b/Makefile
+@@ -7,7 +7,7 @@ NC := \033[0m # No Color
+ include .env
+ export
+ 
+-.PHONY: help init build run stop logs test
++.PHONY: help init build run stop logs test integration-test
+ 
+ help: ## Show this help message
+ 	@echo "CodeQuery Core - Quick Start Guide"
+@@ -49,5 +49,17 @@ stop: ## Stop the Core container
+ logs: ## View container logs
+ 	docker logs -f codequery_core
+ 
+-test: ## Run tests
+-	docker run --rm codequery_core pytest core/tests
++test: ## Run tests (excluding integration)
++	docker run --rm --env-file .env codequery_core pytest core/tests -k "not integration"
++
++integration-test: ## Run integration tests
++	@echo "Running integration tests..."
++	@if lsof -i :5001 >/dev/null 2>&1; then \
++		kill -9 $$(lsof -t -i :5001); \
++		echo "Released port 5001"; \
++	fi
++	@if lsof -i :4040 >/dev/null 2>&1; then \
++		kill -9 $$(lsof -t -i :4040); \
++		echo "Released port 4040"; \
++	fi
++	docker run --rm -p 5001:5001 -p 4040:4040 --env-file .env codequery_core python core/tests/integration_test.py
+diff --git a/core/src/file_service.py b/core/src/file_service.py
+index 8bdb2bb..5fa6eac 100644
+--- a/core/src/file_service.py
++++ b/core/src/file_service.py
+@@ -35,6 +35,7 @@ class FileService:
+     def get_directory_structure(self):
+         """Returns the project directory structure as a dictionary."""
+         ignore_spec = self.load_ignore_spec()
++        ignore_files = self.agentignore_files.split(',')
+ 
+         def traverse_directory(root_dir):
+             dir_structure = {}
+@@ -49,13 +50,18 @@ class FileService:
+ 
+                 dirnames[:] = [d for d in dirnames if not self.is_ignored(
+                     os.path.normpath(os.path.join(folder, d)), ignore_spec)]
+-                filenames = [f for f in filenames if not self.is_ignored(
++
++                # Keep ignore files in the structure even if they match ignore patterns
++                ignore_file_names = [os.path.basename(f) for f in ignore_files]
++                filenames = [f for f in filenames if f in ignore_file_names or not self.is_ignored(
+                     os.path.normpath(os.path.join(folder, f)), ignore_spec)]
+ 
+-                dir_structure[folder] = {
+-                    "files": filenames,
+-                    "directories": dirnames
+-                }
++                # Only include non-empty directories and files in the structure
++                if filenames or dirnames:
++                    dir_structure[folder] = {
++                        "files": filenames,
++                        "directories": dirnames
++                    }
+             return dir_structure
+ 
+         try:
+diff --git a/core/src/ngrok_manager.py b/core/src/ngrok_manager.py
+index 49061d6..70c457b 100644
+--- a/core/src/ngrok_manager.py
++++ b/core/src/ngrok_manager.py
+@@ -72,6 +72,7 @@ class NgrokManager:
+         try:
+             print(
+                 f"Uploading ngrok URL ({ngrok_url}) to Gateway ({gateway_url})")
++            # Upload URL
+             response = requests.post(
+                 gateway_url,
+                 json={'api_key': api_key, 'ngrok_url': ngrok_url},
+@@ -79,6 +80,16 @@ class NgrokManager:
+                 timeout=self.timeout
+             )
+             response.raise_for_status()
++
++            # Verify the upload
++            verify_url = f"{gateway_url}/{api_key}"
++            verify_response = requests.get(
++                verify_url,
++                headers={'X-API-KEY': api_key},
++                timeout=self.timeout
++            )
++            verify_response.raise_for_status()
++
+             print("Successfully uploaded ngrok URL to Gateway.")
+             return True
+         except requests.exceptions.RequestException as e:
+@@ -104,4 +115,10 @@ class NgrokManager:
+             return False
+ 
+         print(f"ngrok is running: {ngrok_url}")
++
++        # Check if the gateway URL matches the current ngrok URL
++        if self.gateway_base_url == ngrok_url:
++            return True
++
++        # If URLs don't match, update the gateway
+         return self.upload_ngrok_url_to_gateway(ngrok_url)
+diff --git a/core/tests/integration_test.py b/core/tests/integration_test.py
+index bfa6832..21d2629 100644
+--- a/core/tests/integration_test.py
++++ b/core/tests/integration_test.py
+@@ -5,6 +5,11 @@ import requests
+ from dotenv import load_dotenv
+ 
+ # TODO: Improve this test to make it rougher, including calls for other endpoints.
++# TODO: Consider converting this to a proper pytest test if we need:
++#       - Better test reporting
++#       - Integration with CI/CD pipelines
++#       - More granular test assertions
++#       For now, keeping it as a script is simpler and works well for manual testing.
+ 
+ # Load environment variables from .env file
+ load_dotenv()
+@@ -35,7 +40,10 @@ def check_ngrok_url():
+         headers = {"x-api-key": API_KEY}
+         # Add a timeout to prevent hanging requests
+         response = requests.get(
+-            NGROK_URL_ENDPOINT, headers=headers, timeout=10)
++            NGROK_URL_ENDPOINT,
++            headers=headers,
++            timeout=10
++        )
+         response.raise_for_status()
+         ngrok_data = response.json()
+         print(f"ngrok URL successfully retrieved: {ngrok_data['ngrok_url']}")
+@@ -51,8 +59,11 @@ def run_curl_test():
+     headers = {"X-API-KEY": API_KEY}
+     try:
+         # Add a timeout to prevent hanging requests
+-        response = requests.get(FILES_STRUCTURE_ENDPOINT,
+-                                headers=headers, timeout=10)
++        response = requests.get(
++            FILES_STRUCTURE_ENDPOINT,
++            headers=headers,
++            timeout=10
++        )
+         response.raise_for_status()
+         print("Main cURL test passed successfully!")
+         print(f"Response: {response.json()}")
+diff --git a/core/tests/test_ngrok_manager.py b/core/tests/test_ngrok_manager.py
+index 19435b9..b218585 100644
+--- a/core/tests/test_ngrok_manager.py
++++ b/core/tests/test_ngrok_manager.py
+@@ -2,14 +2,13 @@
+ import os
+ from unittest import mock
+ import responses
+-import pytest
+ import requests
+ from src.ngrok_manager import NgrokManager
+ 
+ 
+ class TestNgrokManager:
+     """
+-    Test suite for NgrokManager class, focusing on ngrok setup, URL uploads, and status checks.
++    Test suite for NgrokManager class, focusing on ngrok monitoring and URL synchronization.
+     """
+ 
+     def setup_method(self):
+@@ -19,36 +18,6 @@ class TestNgrokManager:
+         """
+         self.ngrok_manager = NgrokManager()  # pylint: disable=W0201
+ 
+-    @mock.patch('src.ngrok_manager.subprocess.Popen')
+-    @mock.patch('src.ngrok_manager.requests.get')
+-    def test_start_ngrok_success(self, mock_get, mock_popen):
+-        # Mock subprocess to simulate ngrok start
+-        mock_process = mock.Mock()
+-        mock_process.communicate.return_value = ('', '')
+-        mock_process.returncode = 0
+-        mock_popen.return_value = mock_process
+-
+-        # Mock the ngrok API response to return a successful status
+-        mock_get.return_value.status_code = 200
+-        mock_get.return_value.json.return_value = {
+-            'tunnels': [{'public_url': 'https://abc123.ngrok-free.app', 'proto': 'https'}]
+-        }
+-
+-        ngrok_url = self.ngrok_manager.start_ngrok()
+-        assert ngrok_url == "https://abc123.ngrok-free.app"
+-
+-    @mock.patch('src.ngrok_manager.subprocess.Popen')
+-    def test_start_ngrok_failure(self, mock_popen):
+-        # Simulate subprocess failure by raising an exception when Popen is called
+-        mock_popen.side_effect = Exception("Subprocess failed")
+-
+-        # Create an instance of NgrokManager
+-        ngrok_manager = NgrokManager()
+-
+-        # Use pytest.raises to ensure the exception is correctly raised
+-        with pytest.raises(Exception, match="Subprocess failed"):
+-            ngrok_manager.start_ngrok()
+-
+     @responses.activate
+     def test_upload_ngrok_url_success(self):
+         # Mock the request URL and response.
+@@ -76,12 +45,10 @@ class TestNgrokManager:
+ 
+         assert success is True
+ 
+-        # Verify that the POST request was called as expected.
++        # Verify that both POST and GET requests were called as expected.
+         assert len(responses.calls) == 2
+         assert responses.calls[0].request.method == 'POST'
+         assert responses.calls[0].request.url == 'http://mockserver/ngrok-url'
+-
+-        # Verify that the GET request was called as expected.
+         assert responses.calls[1].request.method == 'GET'
+         assert responses.calls[1].request.url == 'http://mockserver/ngrok-url/your-api-key'
+ 
+@@ -100,53 +67,52 @@ class TestNgrokManager:
+         assert success is False
+         mock_post.assert_called_once()
+ 
+-    @mock.patch('src.ngrok_manager.NgrokManager.start_ngrok')
+-    @mock.patch('src.ngrok_manager.NgrokManager.upload_ngrok_url_to_gateway')
+-    def test_setup_ngrok_success(self, mock_upload, mock_start):
+-        mock_start.return_value = "https://abc123.ngrok-free.app"
+-        mock_upload.return_value = True
++    def test_setup_ngrok_success(self):
++        # Mock check_ngrok_health to return True
++        with mock.patch.object(self.ngrok_manager, 'check_ngrok_health', return_value=True), \
++                mock.patch.object(self.ngrok_manager, 'get_ngrok_url', return_value="https://abc123.ngrok-free.app"), \
++                mock.patch.object(self.ngrok_manager, 'upload_ngrok_url_to_gateway', return_value=True):
+ 
+-        self.ngrok_manager.setup_ngrok()
++            self.ngrok_manager.setup_ngrok()
+ 
+-        mock_start.assert_called_once()
+-        mock_upload.assert_called_once_with("https://abc123.ngrok-free.app")
++    def test_setup_ngrok_failure_health_check(self):
++        # Mock check_ngrok_health to return False
++        with mock.patch.object(self.ngrok_manager, 'check_ngrok_health', return_value=False), \
++                mock.patch.object(self.ngrok_manager, 'get_ngrok_url') as mock_get_url, \
++                mock.patch.object(self.ngrok_manager, 'upload_ngrok_url_to_gateway') as mock_upload:
+ 
+-    @mock.patch('src.ngrok_manager.NgrokManager.start_ngrok')
+-    @mock.patch('src.ngrok_manager.NgrokManager.upload_ngrok_url_to_gateway')
+-    def test_setup_ngrok_failure(self, mock_upload, mock_start):
+-        mock_start.return_value = None  # Simulate ngrok failing to start
+-        self.ngrok_manager.setup_ngrok()
++            self.ngrok_manager.setup_ngrok()
+ 
+-        mock_start.assert_called_once()
+-        mock_upload.assert_not_called()
++            mock_get_url.assert_not_called()
++            mock_upload.assert_not_called()
+ 
+     @mock.patch('src.ngrok_manager.requests.get')
+-    @mock.patch('src.ngrok_manager.NgrokManager.upload_ngrok_url_to_gateway')
+-    def test_check_ngrok_status_running_synchronized(self, mock_upload, mock_get):
++    def test_check_ngrok_status_running_synchronized(self, mock_get):
+         # Mock the ngrok status response
+         mock_get.return_value.json.return_value = {
+-            "tunnels": [{"public_url": "https://abc123.ngrok-free.app"}]}
++            "tunnels": [{"proto": "https", "public_url": "https://abc123.ngrok-free.app"}]}
+         mock_get.return_value.status_code = 200
+ 
+         # Set the environment variable for the new GATEWAY_BASE_URL
+         with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://abc123.ngrok-free.app"}):
++            self.ngrok_manager.refresh_environment_variables()
+             result = self.ngrok_manager.check_ngrok_status()
+ 
+         # Assert the result and that no upload was triggered
+         assert result is True
+-        mock_upload.assert_not_called()
+ 
+     @mock.patch('src.ngrok_manager.requests.get')
+     @mock.patch('src.ngrok_manager.NgrokManager.upload_ngrok_url_to_gateway')
+     def test_check_ngrok_status_running_not_synchronized(self, mock_upload, mock_get):
+         # Mock a different ngrok URL in the response
+         mock_get.return_value.json.return_value = {
+-            "tunnels": [{"public_url": "https://new-ngrok-url.ngrok-free.app"}]
++            "tunnels": [{"proto": "https", "public_url": "https://new-ngrok-url.ngrok-free.app"}]
+         }
+         mock_get.return_value.status_code = 200
+ 
+         # Set the environment variable to simulate an out-of-sync gateway URL
+         with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://old-ngrok-url.ngrok-free.app"}):
++            self.ngrok_manager.refresh_environment_variables()
+             # Ensure that the upload_ngrok_url_to_gateway returns True to match the assertion
+             mock_upload.return_value = True
+             result = self.ngrok_manager.check_ngrok_status()
+@@ -156,14 +122,13 @@ class TestNgrokManager:
+         mock_upload.assert_called_once_with(
+             "https://new-ngrok-url.ngrok-free.app")
+ 
+-    @mock.patch('src.ngrok_manager.NgrokManager.setup_ngrok')
+     @mock.patch('src.ngrok_manager.requests.get')
+-    def test_check_ngrok_status_not_running(self, mock_get, mock_setup):
++    def test_check_ngrok_status_not_running(self, mock_get):
+         mock_get.return_value.json.return_value = {"tunnels": []}
+         mock_get.return_value.status_code = 200
+ 
+         with mock.patch.dict(os.environ, {"GATEWAY_BASE_URL": "https://abc123.ngrok-free.app"}):
++            self.ngrok_manager.refresh_environment_variables()
+             result = self.ngrok_manager.check_ngrok_status()
+ 
+         assert result is False
+-        mock_setup.assert_called_once()

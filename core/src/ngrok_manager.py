@@ -72,6 +72,7 @@ class NgrokManager:
         try:
             print(
                 f"Uploading ngrok URL ({ngrok_url}) to Gateway ({gateway_url})")
+            # Upload URL
             response = requests.post(
                 gateway_url,
                 json={'api_key': api_key, 'ngrok_url': ngrok_url},
@@ -79,6 +80,16 @@ class NgrokManager:
                 timeout=self.timeout
             )
             response.raise_for_status()
+
+            # Verify the upload
+            verify_url = f"{gateway_url}/{api_key}"
+            verify_response = requests.get(
+                verify_url,
+                headers={'X-API-KEY': api_key},
+                timeout=self.timeout
+            )
+            verify_response.raise_for_status()
+
             print("Successfully uploaded ngrok URL to Gateway.")
             return True
         except requests.exceptions.RequestException as e:
@@ -104,4 +115,10 @@ class NgrokManager:
             return False
 
         print(f"ngrok is running: {ngrok_url}")
+
+        # Check if the gateway URL matches the current ngrok URL
+        if self.gateway_base_url == ngrok_url:
+            return True
+
+        # If URLs don't match, update the gateway
         return self.upload_ngrok_url_to_gateway(ngrok_url)

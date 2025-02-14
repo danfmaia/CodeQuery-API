@@ -1,5 +1,5 @@
 [MASTER]
-init-hook='import sys; sys.path.insert(0, "src/")'
+init-hook='import sys; sys.path.extend(["src/", "core/"])'
 
 [MESSAGES CONTROL]
 disable=C0114

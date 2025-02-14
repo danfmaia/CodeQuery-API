@@ -35,6 +35,7 @@ class FileService:
     def get_directory_structure(self):
         """Returns the project directory structure as a dictionary."""
         ignore_spec = self.load_ignore_spec()
+        ignore_files = self.agentignore_files.split(',')
 
         def traverse_directory(root_dir):
             dir_structure = {}
@@ -49,13 +50,18 @@ class FileService:
 
                 dirnames[:] = [d for d in dirnames if not self.is_ignored(
                     os.path.normpath(os.path.join(folder, d)), ignore_spec)]
-                filenames = [f for f in filenames if not self.is_ignored(
+
+                # Keep ignore files in the structure even if they match ignore patterns
+                ignore_file_names = [os.path.basename(f) for f in ignore_files]
+                filenames = [f for f in filenames if f in ignore_file_names or not self.is_ignored(
                     os.path.normpath(os.path.join(folder, f)), ignore_spec)]
 
-                dir_structure[folder] = {
-                    "files": filenames,
-                    "directories": dirnames
-                }
+                # Only include non-empty directories and files in the structure
+                if filenames or dirnames:
+                    dir_structure[folder] = {
+                        "files": filenames,
+                        "directories": dirnames
+                    }
             return dir_structure
 
         try:

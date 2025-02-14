@@ -5,6 +5,11 @@ import requests
 from dotenv import load_dotenv
 
 # TODO: Improve this test to make it rougher, including calls for other endpoints.
+# TODO: Consider converting this to a proper pytest test if we need:
+#       - Better test reporting
+#       - Integration with CI/CD pipelines
+#       - More granular test assertions
+#       For now, keeping it as a script is simpler and works well for manual testing.
 
 # Load environment variables from .env file
 load_dotenv()
@@ -35,7 +40,10 @@ def check_ngrok_url():
         headers = {"x-api-key": API_KEY}
         # Add a timeout to prevent hanging requests
         response = requests.get(
-            NGROK_URL_ENDPOINT, headers=headers, timeout=10)
+            NGROK_URL_ENDPOINT,
+            headers=headers,
+            timeout=10
+        )
         response.raise_for_status()
         ngrok_data = response.json()
         print(f"ngrok URL successfully retrieved: {ngrok_data['ngrok_url']}")
@@ -51,8 +59,11 @@ def run_curl_test():
     headers = {"X-API-KEY": API_KEY}
     try:
         # Add a timeout to prevent hanging requests
-        response = requests.get(FILES_STRUCTURE_ENDPOINT,
-                                headers=headers, timeout=10)
+        response = requests.get(
+            FILES_STRUCTURE_ENDPOINT,
+            headers=headers,
+            timeout=10
+        )
         response.raise_for_status()
         print("Main cURL test passed successfully!")
         print(f"Response: {response.json()}")

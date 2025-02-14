@@ -7,7 +7,7 @@ NC := \033[0m # No Color
 include .env
 export
 
-.PHONY: help init build run stop logs test
+.PHONY: help init build run stop logs test integration-test
 
 help: ## Show this help message
 	@echo "CodeQuery Core - Quick Start Guide"
@@ -49,5 +49,17 @@ stop: ## Stop the Core container
 logs: ## View container logs
 	docker logs -f codequery_core
 
-test: ## Run tests
-	docker run --rm codequery_core pytest core/tests
+test: ## Run tests (excluding integration)
+	docker run --rm --env-file .env codequery_core pytest core/tests -k "not integration"
+
+integration-test: ## Run integration tests
+	@echo "Running integration tests..."
+	@if lsof -i :5001 >/dev/null 2>&1; then \
+		kill -9 $$(lsof -t -i :5001); \
+		echo "Released port 5001"; \
+	fi
+	@if lsof -i :4040 >/dev/null 2>&1; then \
+		kill -9 $$(lsof -t -i :4040); \
+		echo "Released port 4040"; \
+	fi
+	docker run --rm -p 5001:5001 -p 4040:4040 --env-file .env codequery_core python core/tests/integration_test.py
