@@ -18,7 +18,7 @@
 
 ## Introduction
 
-**CodeQuery™ API** is a lightweight and efficient Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code. With this API, [LLM agents](https://python.langchain.com/v0.1/docs/modules/agents/) can query project structures and retrieve file contents, helping developers explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are accessed, making it an invaluable tool for AI-driven code analysis and development.
+**CodeQuery™ API** is a lightweight Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code effectively. With this API, [LLM agents](https://python.langchain.com/v0.1/docs/modules/agents/) can query project structures and retrieve file contents, helping developers explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are accessed, making it an invaluable tool for AI-driven code analysis and development.
 
 🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages! For more details on how the CodeQuery API has been applied, see the [Cases](#cases) section.
 
@@ -28,6 +28,137 @@
 - **Retrieve Project Structure**: Get a detailed view of the project's directories and files.
 - **Retrieve File Contents**: Access the contents of specific files in the project, with error handling for non-existent paths.
 - **Custom Ignore Patterns**: Utilize `.agentignore` and/or `.gitignore` for specifying which files or directories to exclude from the structure retrieval.
+
+## Installation and Usage
+
+The CodeQuery API consists of two components:
+
+- A **Core** component that runs locally and accesses your files
+- A **Gateway** service that manages authentication and routes requests
+
+### Prerequisites
+
+- **Docker**: Required for running the Core component in a container
+- **Make**: Used for simplified command execution
+- **curl**: Needed for API key generation and testing
+- **ngrok account**: Required for secure tunneling (free tier is sufficient)
+  - Sign up at https://dashboard.ngrok.com/signup
+  - Get your authtoken at https://dashboard.ngrok.com/get-started/your-authtoken
+
+### Quick Start
+
+1. **Get Required Credentials**:
+
+   ```bash
+   # Generate a new API key from the Gateway service
+   curl -X POST https://codequery.dev/api-keys/generate
+
+   # Get your ngrok authtoken from https://dashboard.ngrok.com/get-started/your-authtoken
+   # You'll need this in step 2c
+   ```
+
+2. **Set Up the Core Component**:
+
+   a. Clone the repository:
+
+   ```bash
+   git clone https://github.com/danfmaia/CodeQuery-API.git
+   cd CodeQuery-API
+   ```
+
+   b. Initialize the environment:
+
+   ```bash
+   make init  # Creates a fresh .env file from template
+   # Use 'make clean' if you need to start fresh later
+   ```
+
+   c. Configure your `.env` file:
+
+   - Set your project path
+   - Add your API key from step 1
+   - Add your ngrok authtoken from step 1
+
+3. **Start the Core**:
+
+   ```bash
+   make build  # Build the Docker image
+   make run    # Run the Core container
+   ```
+
+   The Core will automatically:
+
+   - Start a secure ngrok tunnel
+   - Register its URL with the Gateway
+   - Begin accepting requests through the Gateway
+
+4. **Use the API**:
+
+   ```bash
+   # Get the project structure
+   curl -H "X-API-KEY: API_KEY" https://codequery.dev/files/structure
+
+   # Get specific file contents
+   curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "X-API-KEY: API_KEY" \
+     -d '{"file_paths": ["README.md"]}' \
+     https://codequery.dev/files/content
+   ```
+
+5. **Other Useful Commands**:
+   ```bash
+   make help   # Show all available commands
+   make stop   # Stop the container
+   make test   # Run tests
+   make logs   # View container logs
+   ```
+
+### Environment Variables
+
+The `.env` file created by `make init` contains all necessary configuration. The main variables you'll need to set are:
+
+```plaintext
+# Required settings
+PROJECT_PATH=      # Path to the project you want to analyze
+API_KEY=          # Your API key from step 1
+NGROK_AUTHTOKEN=  # Your ngrok authtoken
+```
+
+Other settings like ports and timeouts have sensible defaults and usually don't need modification.
+
+For more detailed information about the API endpoints and advanced usage, see the [Documentation](docs/README.md).
+
+### Other Exposure Options
+
+#### 1. **Using a Paid Ngrok URL**
+
+- **Description**: If you have a paid ngrok plan, set up a permanent public URL by running the Core component locally and using the ngrok URL for external access.
+
+- **Command**:
+
+  ```bash
+  python run_local.py
+  ```
+
+- **Use Case**: Suitable for users who require a consistent external URL and prefer a simple setup.
+
+#### 2. **Setting Up a Self-Hosted Server**
+
+- **Description**: For users with a static IP or home server, you can host the Core directly using your ISP's services, avoiding ngrok or Gateway usage.
+
+- **Command**:
+
+  ```bash
+  python run_local.py
+  ```
+
+- **Steps**:
+
+  1. **Check Static IP Availability**: Ensure your ISP offers a static IP.
+  2. **Port Forwarding**: Configure your router to forward traffic on port 5001 to the local machine.
+  3. **Domain Setup**: Consider using a custom domain for access.
+  4. **SSL/TLS Configuration**: Use services like Let's Encrypt to secure the server.
 
 ## API Endpoints
 
@@ -174,189 +305,6 @@ node_modules/
 package-lock.json
 package.json
 ```
-
-## Environment Variables
-
-The **CodeQuery API** relies on environment variables, defined in an `.env` file located in the root directory, to configure its behavior. Follow these steps to set up the environment variables correctly:
-
-1. **Locate `template.env`**: After cloning the repository, find the `template.env` file in the root directory. This file serves as a template for the necessary environment variables.
-
-2. **Rename `template.env` to `.env`**: Before customizing the variables, rename the file:
-
-   ```bash
-   mv template.env .env
-   ```
-
-3. **Customize the Variables**: Adjust the variables in the `.env` file according to your project's requirements:
-
-   ```plaintext
-   # Project Settings
-   PROJECT_PATH="../my-project"                  # Set this to the root path of your project
-   AGENTIGNORE_FILES=".agentignore,.gitignore"   # Specify custom ignore patterns for file structure queries
-
-   # API Integration
-   API_KEY="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"    # Your personal API key (if applicable)
-   GATEWAY_BASE_URL="https://codequery.dev"      # Set to your Gateway's public URL (if applicable)
-   NGROK_AUTHTOKEN="YOUR_NGROK_AUTHTOKEN"        # Your ngrok authtoken for v3.x
-
-   # Other
-   LOCAL_PORT=5001                               # Port number for running the Core component locally
-   TIMEOUT=10                                    # Request timeout in seconds
-   ```
-
-## Installation and Usage
-
-### Prerequisites
-
-- Docker
-- Make
-
-### Quick Start
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/danfmaia/CodeQuery-API.git
-   cd CodeQuery-API
-   ```
-
-2. **Initialize the environment**:
-
-   ```bash
-   make init
-   ```
-
-   This will create a `.env` file from the template. Edit it with your settings.
-
-3. **Get an API Key**:
-   You have two options:
-
-   a) **Using the Gateway** (Recommended):
-
-   ```bash
-   # Generate a new API key
-   curl -X POST https://codequery.dev/api-keys/generate
-   ```
-
-   The response will include your API key. Add it to your `.env` file:
-
-   ```bash
-   API_KEY="your-generated-key"
-   ```
-
-   b) **Local Development** (Without Gateway):
-   For local development without the Gateway, you can use any secure random string as your API key.
-   Add it to your `.env` file:
-
-   ```bash
-   API_KEY="your-development-key"
-   ```
-
-4. **Build and Run**:
-
-   ```bash
-   make build  # Build the Docker image
-   make run    # Run the Core container
-   ```
-
-5. **Test the API**:
-
-   ```bash
-   # Get the project structure
-   curl -H "X-API-KEY: $API_KEY" http://localhost:5001/files/structure
-
-   # Get specific file contents
-   curl -X POST \
-     -H "Content-Type: application/json" \
-     -H "X-API-KEY: $API_KEY" \
-     -d '{"file_paths": ["README.md"]}' \
-     http://localhost:5001/files/content
-   ```
-
-Example Response (files/structure):
-
-```json
-{
-  ".": {
-    "directories": ["core", "docs", "gateway"],
-    "files": ["README.md", "Makefile", "Dockerfile"]
-  },
-  "core": {
-    "directories": ["src", "tests"],
-    "files": ["requirements.txt", "run.py"]
-  }
-}
-```
-
-Example Response (files/content):
-
-```json
-{
-  "README.md": "# CodeQuery API\n\nA powerful API for querying and analyzing codebases...",
-  "status": "success"
-}
-```
-
-6. **Other Useful Commands**:
-   ```bash
-   make help   # Show all available commands
-   make stop   # Stop the container
-   make test   # Run tests
-   make logs   # View container logs
-   ```
-
-For more detailed information about the API endpoints and advanced usage, see the [Documentation](docs/README.md).
-
-### Testing the API
-
-Once the container is running, you can test the API by sending requests to the exposed endpoints.
-
-- **Retrieve Project Structure**:
-
-  ```bash
-  curl -H "X-API-KEY: $API_KEY" http://127.0.0.1:5001/files/structure
-  ```
-
-- **Retrieve File Contents**:
-
-  ```bash
-  curl -X POST -H "Content-Type: application/json" -H "X-API-KEY: $API_KEY" \
-  -d '{"file_paths": ["core/run.py", "core/src/ngrok_manager.py"]}' \
-  http://127.0.0.1:5001/files/content
-  ```
-
-For extensive testing, refer to the [Testing Guide](docs/testing.md).
-
-### Other Exposure Options
-
-#### 1. **Using a Paid Ngrok URL**
-
-- **Description**: If you have a paid ngrok plan, set up a permanent public URL by running the Core component locally and using the ngrok URL for external access.
-
-- **Command**:
-
-  ```bash
-  python run_local.py
-  ```
-
-- **Use Case**: Suitable for users who require a consistent external URL and prefer a simple setup.
-
-#### 2. **Setting Up a Self-Hosted Server**
-
-- **Description**: For users with a static IP or home server, you can host the Core directly using your ISP's services, avoiding ngrok or Gateway usage.
-
-- **Command**:
-
-  ```bash
-  python run_local.py
-  ```
-
-- **Steps**:
-
-  1. **Check Static IP Availability**: Ensure your ISP offers a static IP.
-  2. **Port Forwarding**: Configure your router to forward traffic on port 5001 to the local machine.
-  3. **Domain Setup**: Consider using a custom domain for access.
-  4. **SSL/TLS Configuration**: Use services like Let's Encrypt to secure the server.
 
 ## CodeQueryGPT – Creating your own custom GPT for using this API
 

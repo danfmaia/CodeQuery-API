@@ -85,7 +85,8 @@ class GatewayAPI:
             """
             Middleware to validate API keys and dynamically set the ngrok URL for each request.
             """
-            if request.url.path == "/":
+            # Skip authentication for root and API key generation endpoints
+            if request.url.path == "/" or request.url.path == "/api-keys/generate":
                 return await call_next(request)
 
             api_key = request.headers.get("x-api-key")

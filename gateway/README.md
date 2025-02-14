@@ -111,6 +111,26 @@ uvicorn gateway:app --reload
 
 ### 6. Deploying to EC2
 
+There are two ways to deploy and test the Gateway on EC2:
+
+#### Option 1: Using the Automated Script
+
+The `deploy_and_test_ec2.sh` script provides an automated way to deploy changes and run tests:
+
+```bash
+# Make sure your .env file has EC2_USER, EC2_HOST, and KEY_PATH configured
+./gateway/deploy_and_test_ec2.sh
+```
+
+This script will:
+
+1. Sync your local requirements.txt with EC2 and install any new dependencies
+2. Upload all project files to EC2
+3. Run the test suite
+4. Download test results to your local machine
+
+#### Option 2: Manual Deployment
+
 Once the Gateway infrastructure is set up using Terraform, follow these steps to deploy the application files to the EC2 instance and manage the service:
 
 1. **Access the EC2 Instance via SSH**

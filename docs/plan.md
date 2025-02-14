@@ -1,87 +1,53 @@
 # Project Enhancement Plan
 
-## 1. Quick Start Experience (High Priority)
+## Immediate Priority (3-Hour Timeline)
 
-### API Key Management
+### 1. Verify Core-Gateway Integration
 
-- [x] Implement secure API key generation endpoint in Gateway
-- [x] Add S3-based encrypted storage for API keys
-- [ ] Add rate limiting to protect the service
-- [ ] Implement key expiration for better security
-- [ ] Add key usage tracking (last used, request count)
+- [ ] Test complete API key flow:
+  - [ ] Generate API key via Gateway
+  - [ ] Verify key storage in S3
+  - [ ] Test Core's ability to use the key
+  - [ ] Verify rate limiting through Core
+  - [ ] Test key expiration through Core
 
-### Documentation
+### 2. Integration Testing
 
-- [ ] Enhance Quick Start section in README
-  - [ ] Add clear step-by-step instructions
-  - [ ] Include example responses for each endpoint
-  - [ ] Add troubleshooting tips
-- [ ] Create a Postman collection for easy API testing
-- [ ] Add usage examples with popular AI platforms
+- [ ] Test end-to-end flow:
+  - [ ] Core startup and ngrok URL registration
+  - [ ] Gateway's dynamic URL updates
+  - [ ] File structure retrieval through Core
+  - [ ] File content access through Core
 
-### Visual Documentation
+### 3. Essential Documentation
 
-- [ ] Add architecture diagram
-- [ ] Include screenshots of key features
-- [ ] Create demo GIFs showing:
-  - [ ] Project structure retrieval
-  - [ ] File content access
-  - [ ] Integration with AI assistants
+- [ ] Update main README with:
+  - [ ] Correct architecture overview (Core + Gateway)
+  - [ ] Accurate setup instructions
+  - [ ] API key acquisition process
 
-## 2. Core Features (Medium Priority)
+## Future Improvements (Post-Release)
 
-### Performance & Reliability
+### Phase 1: Core Improvements
+
+- [ ] Add retry logic for cloud operations
+- [ ] Add request logging
+- [ ] Improve error handling
+
+### Phase 2: Enhanced Features
 
 - [ ] Add caching for frequently accessed files
-- [ ] Implement request queueing for large file operations
-- [ ] Add retry logic for cloud operations
+- [ ] Create visual documentation
+- [ ] Add integration examples
 
-### Security Enhancements
+### Phase 3: Advanced Features
 
-- [ ] Add request logging for audit trails
-- [ ] Implement IP-based rate limiting
+- [ ] Develop management interface
 - [ ] Add automated security scanning
+- [ ] Implement advanced monitoring
 
-## 3. Optional Improvements (Low Priority)
+## Success Metrics for 3-Hour Goal
 
-### Management Interface
-
-- [ ] Create a simple web dashboard for:
-  - [ ] API key management
-  - [ ] Usage statistics
-  - [ ] System status
-
-### Integration Examples
-
-- [ ] Add example integrations with:
-  - [ ] Custom GPTs
-  - [ ] LangChain agents
-  - [ ] Other AI platforms
-
-## Implementation Notes
-
-### Phase 1 (Immediate)
-
-1. Focus on Quick Start improvements
-2. Implement basic rate limiting
-3. Add key expiration
-4. Update documentation with examples
-
-### Phase 2 (Next Steps)
-
-1. Add performance enhancements
-2. Implement security features
-3. Create visual documentation
-
-### Phase 3 (Future)
-
-1. Develop management interface
-2. Add integration examples
-3. Implement advanced features
-
-## Success Metrics
-
-- Reduced time to first API call
-- Increased documentation clarity
-- Better error handling and user feedback
-- Improved security measures
+- Core and Gateway are properly integrated
+- API key management flow works end-to-end
+- Users can successfully access Core through Gateway
