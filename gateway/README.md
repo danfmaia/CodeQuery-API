@@ -8,15 +8,17 @@ The Gateway is an optional but recommended component for scenarios requiring sec
 
 ## Features
 
-- **Secure Request Forwarding**: Manages access to the Core component’s `/files/structure` and `/files/content` endpoints using API key validation.
-- **Dynamic ngrok URL Management**: Synchronizes the Core’s ngrok URLs dynamically using S3, allowing seamless updates without downtime.
+- **Secure Request Forwarding**: Manages access to the Core component's `/files/structure` and `/files/content` endpoints using API key validation.
+- **Dynamic ngrok URL Management**: Synchronizes the Core's ngrok URLs dynamically using S3, allowing seamless updates without downtime.
 - **API Key Authentication**: Ensures secure access to all endpoints using predefined API keys.
 - **Infrastructure as Code**: Fully deployable via Terraform, with modular configurations for EC2, S3, and Load Balancer setups.
+- **Enhanced Security**: Server-side encryption for all S3 objects using AWS KMS, bucket-level encryption, and public access blocking.
+- **API Key Management**: Secure storage and management of API keys using AWS KMS for encryption.
 
 ## Prerequisites
 
 - Python 3.8+
-- AWS account with permissions for EC2, S3, and Route 53
+- AWS account with permissions for EC2, S3, KMS, and Route 53
 - Terraform installed locally
 - A configured `.env` file with relevant AWS and application variables
 
@@ -42,9 +44,17 @@ API_KEYS=test-key,other-valid-key,O8i5EVRqYI+0OGjPgoXI5Ey2CQzfJ+uIyI7e7yn8j0A=
 EC2_USER="ec2-user"
 EC2_HOST="<Your-EC2-Host-URL>"    # Replace with your EC2 public DNS or IP
 KEY_PATH="./secrets/codequery-keypair.pem"  # Path to your SSH private key file
+
+# AWS Configuration
+AWS_REGION="sa-east-1"  # Your AWS region
+KMS_KEY_ID="arn:aws:kms:sa-east-1:YOUR_ACCOUNT_ID:key/YOUR_KEY_ID"  # Your KMS key ARN
 ```
 
-**Important**: Replace `<Your-EC2-Host-URL>` with your actual EC2 instance’s public DNS (e.g., `ec2-xx-xx-xxx-xxx.region-id.compute.amazonaws.com`). Ensure the `KEY_PATH` points to your SSH private key file used for connecting to the EC2 instance.
+**Important**: Replace the placeholders with your actual values:
+
+- `<Your-EC2-Host-URL>`: Your EC2 instance's public DNS (e.g., `ec2-xx-xx-xxx-xxx.region-id.compute.amazonaws.com`)
+- `YOUR_ACCOUNT_ID`: Your AWS account ID
+- `YOUR_KEY_ID`: The ID of your KMS key
 
 ### 3. Install Dependencies
 
@@ -67,7 +77,29 @@ terraform plan
 terraform apply
 ```
 
-This will provision the EC2 instance, security groups, and other necessary resources.
+This will provision:
+
+- EC2 instance with necessary IAM roles
+- S3 bucket with server-side encryption and public access blocking
+- KMS key for encrypting API keys and other sensitive data
+- Security groups and other required resources
+
+### 5. API Key Management
+
+The Gateway provides a secure way to manage API keys using the `manage_api_keys.sh` script:
+
+```bash
+# Add a new API key
+./scripts/manage_api_keys.sh add "your-api-key" "User1"
+
+# List all API keys (usernames only)
+./scripts/manage_api_keys.sh list
+
+# Remove an API key
+./scripts/manage_api_keys.sh remove "your-api-key"
+```
+
+All API keys are stored in S3 with server-side encryption using AWS KMS.
 
 ### 5. Start the Application Locally (Optional)
 
@@ -273,7 +305,7 @@ This ensures the Gateway application is correctly deployed, managed, and monitor
 ## Troubleshooting
 
 - **API Key Issues**: Ensure that the API key is correctly set in your environment variables and the `.env` file on the EC2 instance.
-- **ngrok URL Mismatch**: If the Core’s ngrok URL is not synchronizing correctly, check the S3 bucket for the current values and verify that the Gateway exposed URL is configured properly, and correctly set in `GATEWAY_BASE_URL` (Core-side variable).
+- **ngrok URL Mismatch**: If the Core's ngrok URL is not synchronizing correctly, check the S3 bucket for the current values and verify that the Gateway exposed URL is configured properly, and correctly set in `GATEWAY_BASE_URL` (Core-side variable).
 - **Permission Errors**: Verify that the EC2 instance and S3 bucket have the correct IAM roles and permissions.
 
 ## License

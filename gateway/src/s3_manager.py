@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import boto3
 from botocore.exceptions import ClientError
@@ -10,18 +11,74 @@ class S3Manager:
     """
 
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.s3_client = self.get_s3_client()
+        self.kms_client = self.get_kms_client()
         self.bucket_name, self.object_key = self.get_s3_bucket_and_key()
 
     def get_s3_client(self):
         """Initialize and return a new S3 client."""
-        return boto3.client('s3')
+        region = os.getenv('AWS_REGION', 'us-east-1')
+        return boto3.client('s3', region_name=region)
+
+    def get_kms_client(self):
+        """Initialize and return a new KMS client."""
+        region = os.getenv('AWS_REGION', 'us-east-1')
+        return boto3.client('kms', region_name=region)
 
     def get_s3_bucket_and_key(self):
         """Get the S3 bucket name and object key."""
         bucket_name = os.getenv('S3_BUCKET_NAME', 'codequery-gateway-storage')
         object_key = 'ngrok_urls.json'
         return bucket_name, object_key
+
+    def load_encrypted_api_keys(self):
+        """
+        Load API keys from the S3 bucket. The data is automatically decrypted by S3
+        when using server-side encryption with KMS.
+        """
+        try:
+            response = self.s3_client.get_object(
+                Bucket=self.bucket_name, Key='api_keys.json'
+            )
+            # S3 automatically decrypts the data when using SSE-KMS
+            raw_data = response['Body'].read().decode('utf-8')
+            api_keys = json.loads(raw_data)
+            return api_keys
+
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                self.logger.warning("API keys file not found in S3.")
+                return None
+            # Fixed logging
+            self.logger.error("ClientError while accessing S3: %s", str(e))
+            raise e
+
+        except json.JSONDecodeError as e:
+            self.logger.error("Error decoding JSON data: %s", str(e))
+            return None
+
+    def store_encrypted_api_keys(self, api_keys):
+        """
+        Store API keys in the S3 bucket using server-side encryption with KMS.
+        """
+        try:
+            # Convert API keys dictionary to JSON
+            raw_data = json.dumps(api_keys)
+
+            # Store the data in S3 with server-side encryption
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key='api_keys.json',
+                Body=raw_data,
+                ServerSideEncryption='aws:kms',
+                SSEKMSKeyId=os.getenv('KMS_KEY_ID'),
+                ContentType='application/json'
+            )
+            return {"status": "success", "message": "API keys stored securely in S3"}
+
+        except ClientError as e:
+            raise e
 
     def load_ngrok_url(self, api_key):
         """
