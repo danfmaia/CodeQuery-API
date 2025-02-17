@@ -61,19 +61,33 @@ class CodeQueryAPI:
 
     def ensure_ngrok_tunnel(self):
         """Ensure the ngrok tunnel is correctly set up and synchronized."""
-        print("Ensuring ngrok tunnel is set up...")
+        self.logger.info("Ensuring ngrok tunnel is set up...")
 
-        if not self.ngrok_manager.check_ngrok_status():
-            print("ngrok tunnel not running or not synchronized. Setting up...")
-            self.ngrok_manager.setup_ngrok()
+        try:
+            if not self.ngrok_manager.check_ngrok_status():
+                self.logger.info(
+                    "ngrok tunnel not running or not synchronized. Setting up...")
+                try:
+                    self.ngrok_manager.setup_ngrok()
+                except Exception as e:
+                    self.logger.error(f"Error setting up ngrok: {str(e)}")
+                    self.logger.warning(
+                        "Continuing without Gateway registration...")
+                    return True
 
-        # Verify ngrok health after setup
-        if not self.ngrok_manager.check_ngrok_health():
-            print("ngrok health check failed. Exiting setup.")
-            return False
+            # Verify ngrok health after setup
+            if not self.ngrok_manager.check_ngrok_health():
+                self.logger.error("ngrok health check failed after setup.")
+                self.logger.warning(
+                    "Continuing without Gateway registration...")
+                return True
 
-        print("ngrok tunnel is running and synchronized.")
-        return True
+            self.logger.info("ngrok tunnel is running and synchronized.")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error ensuring ngrok tunnel: {str(e)}")
+            self.logger.warning("Continuing without Gateway registration...")
+            return True
 
     def setup_log_filters(self):
         """Apply filters to the access logs."""
@@ -170,5 +184,11 @@ class CodeQueryAPI:
 
     def run(self):
         """Run the Flask application."""
-        local_port = int(os.getenv("LOCAL_PORT", "5001"))
-        self.app.run(host='0.0.0.0', port=local_port)
+        try:
+            local_port = int(os.getenv("LOCAL_PORT", "5001"))
+            self.logger.info(
+                f"Starting Flask application on port {local_port}...")
+            self.app.run(host='0.0.0.0', port=local_port, use_reloader=False)
+        except Exception as e:
+            self.logger.error(f"Failed to start Flask application: {str(e)}")
+            raise

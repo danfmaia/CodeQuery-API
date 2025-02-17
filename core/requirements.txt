@@ -4,3 +4,4 @@ python-dotenv
 requests
 pathspec
 responses
+pytest-cov>=2.12.0,<3.0.0
