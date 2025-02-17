@@ -215,7 +215,7 @@ class TestS3Manager(unittest.TestCase):
                 'GetObject'
             )
             result = self.s3_manager.load_ngrok_url('test-key')
-            self.assertIsNone(result)
+            self.assertIs(result, False)
 
             # Test NoSuchKey error in update_ngrok_url
             result = self.s3_manager.update_ngrok_url(

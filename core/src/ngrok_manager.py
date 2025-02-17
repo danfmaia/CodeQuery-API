@@ -110,7 +110,7 @@ class NgrokManager:
 
                 # Upload URL
                 response = requests.post(
-                    gateway_url,  # No trailing slash
+                    f"{gateway_url}/",  # Add trailing slash for POST endpoint
                     json={'api_key': api_key, 'ngrok_url': ngrok_url},
                     headers={'X-API-KEY': api_key},
                     timeout=self.timeout

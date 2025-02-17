@@ -115,7 +115,10 @@ class S3Manager:
     def load_ngrok_url(self, api_key):
         """
         Load the ngrok URL for a given API key from the S3 bucket.
-        The data is automatically decrypted by S3 when using server-side encryption with KMS.
+        Returns:
+            - The URL string if it exists
+            - None if the key exists but has no URL
+            - False if the key doesn't exist in the ngrok_urls.json file
         """
         try:
             response = self.s3_client.get_object(
@@ -127,10 +130,16 @@ class S3Manager:
             self.logger.debug(
                 "Retrieved %d ngrok URL mappings from S3", len(ngrok_data))
 
-            return ngrok_data.get(api_key)
+            # If the key exists in the data, return its value (which may be None)
+            if api_key in ngrok_data:
+                return ngrok_data[api_key]
+
+            # Key doesn't exist in the file
+            return False
+
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
-                return None
+                return False
             raise e
 
     def update_ngrok_url(self, api_key, new_ngrok_url):

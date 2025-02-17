@@ -9,6 +9,7 @@ from src.s3_manager import S3Manager
 import secrets
 import base64
 import datetime
+from urllib.parse import unquote_plus
 
 
 class GatewayAPI:
@@ -164,6 +165,10 @@ class GatewayAPI:
                         self.logger.error(
                             f"Error checking rate limit: {str(e)}")
                         return JSONResponse(status_code=500, content={"detail": "Error checking rate limit"})
+
+                # Skip ngrok URL validation for /ngrok-urls/ endpoints
+                if request.url.path.startswith("/ngrok-urls/"):
+                    return await call_next(request)
 
                 # Use ngrok URL cache for each request dynamically based on the API key
                 try:
@@ -327,12 +332,40 @@ class GatewayAPI:
         async def get_ngrok_url_endpoint(api_key: str):
             """
             Retrieve the ngrok URL for a given API key.
+            Returns:
+                - {"api_key": key, "ngrok_url": url} if URL exists
+                - {"api_key": key, "ngrok_url": null} if key exists but has no URL
+                - 404 if key doesn't exist
             """
-            ngrok_url = self.s3_manager.load_ngrok_url(api_key)
-            if not ngrok_url:
+            try:
+                # URL decode the API key
+                api_key = unquote_plus(api_key)
+
+                # First check if the key exists in the API keys file
+                api_keys = self.s3_manager.load_encrypted_api_keys() or {}
+                if api_key not in api_keys:
+                    raise HTTPException(
+                        status_code=404, detail=f"API key {api_key} not found")
+
+                # Then get the ngrok URL (which may be null)
+                ngrok_url = self.s3_manager.load_ngrok_url(api_key)
+
+                # If the key doesn't exist in the ngrok URLs file, initialize it with null
+                if ngrok_url is False:
+                    self.s3_manager.update_ngrok_url(api_key, None)
+                    ngrok_url = None
+
+                # Return the URL (which may be None)
+                return {"api_key": api_key, "ngrok_url": ngrok_url}
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                self.logger.error(f"Error retrieving ngrok URL: {str(e)}")
                 raise HTTPException(
-                    status_code=404, detail=f"No ngrok URL found for API key {api_key}")
-            return {"api_key": api_key, "ngrok_url": ngrok_url}
+                    status_code=500,
+                    detail=f"Error retrieving ngrok URL: {str(e)}"
+                ) from e
 
         @self.app.post("/api-keys/generate")
         async def generate_api_key(request: Request):

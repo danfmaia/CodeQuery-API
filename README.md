@@ -110,7 +110,7 @@ The CodeQuery API consists of two components:
    curl -X POST \
      -H "Content-Type: application/json" \
      -H "X-API-KEY: $API_KEY" \
-     -d '{"file_paths": ["README.md"]}' \
+     -d '{"file_paths": ["README.md", "Makefile"]}' \
      https://codequery.dev/files/content
    ```
 

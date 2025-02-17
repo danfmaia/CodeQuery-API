@@ -549,7 +549,8 @@ class TestGatewayAPI(unittest.TestCase):
             response = self.client.post(
                 "/ngrok-urls/", json={}, headers=headers)
             self.assertEqual(response.status_code, 500)
-            self.assertEqual(response.json(), {"detail": "Invalid ngrok URL"})
+            self.assertEqual(response.json(), {
+                             "detail": "Failed to update ngrok URL: "})
 
     def test_middleware_general_error(self):
         """Test handling of general errors in middleware."""
