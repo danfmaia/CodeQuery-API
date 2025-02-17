@@ -88,7 +88,7 @@ class NgrokManager:
             time.sleep(current_delay)
             current_delay = min(current_delay * self.backoff_factor, 30)
 
-        error_msg = "Failed to setup ngrok URL"
+        error_msg = "Failed to setup and register ngrok URL with Gateway"
         self.logger.error(error_msg)
         raise RuntimeError(error_msg)
 

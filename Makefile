@@ -85,8 +85,24 @@ run: ## Run the Core container
 		kill -9 $$(lsof -t -i :5001); \
 		echo "Released port 5001"; \
 	fi
-	docker run --rm -d -p 5001:5001 -p 4040:4040 --name codequery_core -v "$(shell pwd):/app" --env-file .env codequery_core
-	@echo "$(GREEN)Container started. Use 'make logs' to view logs.$(NC)"
+	@docker run --rm -d -p 5001:5001 -p 4040:4040 --name codequery_core -v "$(shell pwd):/app" --env-file .env codequery_core
+	@echo "$(YELLOW)Waiting for ngrok and Gateway registration...$(NC)"
+	@for i in $$(seq 1 30); do \
+		sleep 1; \
+		if docker logs codequery_core 2>&1 | grep -q "ngrok tunnel is running and synchronized\|ngrok is running:"; then \
+			NGROK_URL=$$(docker logs codequery_core 2>&1 | grep "ngrok is running:" | grep -o "https://[^[:space:]]*"); \
+			echo "$(GREEN)✓ ngrok tunnel is running$(NC)"; \
+			echo "$(GREEN)✓ ngrok URL: $$NGROK_URL$(NC)"; \
+			echo "$(GREEN)✓ API Key: $$API_KEY$(NC)"; \
+			echo "\nContainer is ready! Use 'make logs' to view detailed logs."; \
+			exit 0; \
+		fi; \
+		if [ $$i -eq 30 ]; then \
+			echo "$(RED)Timeout waiting for ngrok setup. Check 'make logs' for details.$(NC)"; \
+			exit 1; \
+		fi; \
+		echo -n "."; \
+	done
 
 stop: ## Stop the Core container
 	@echo "Stopping Core container..."
