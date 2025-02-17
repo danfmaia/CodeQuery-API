@@ -12,6 +12,7 @@ command.txt
 temp.txt
 git_changes.diff
 *.backup
+.coverage
 
 #
 # Gateway
