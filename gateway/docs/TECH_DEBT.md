@@ -53,3 +53,16 @@
    - Add pre-commit hooks for code formatting
    - Add automated version management
    - Add development/staging/production environment configs
+
+## API Management
+
+### High Priority
+
+1. **API Key Management**
+   - Add endpoint to purge all data associated with a specific API key
+     - Remove key from `api_keys.json`
+     - Remove key from `ngrok_urls.json`
+     - Add authentication to ensure only authorized users can purge keys
+     - Add logging for audit trail
+     - Consider soft delete option for data recovery
+   - Add validation to ensure Gateway admin key cannot be purged
