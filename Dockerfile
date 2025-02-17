@@ -31,6 +31,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only necessary files
 COPY core/ core/
+COPY .agentignore .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 

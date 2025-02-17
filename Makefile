@@ -4,7 +4,7 @@ RED := \033[0;31m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: help init build run stop logs test integration-test clean
+.PHONY: help init build run stop logs test integration-test clean integration-test-gateway test-coverage
 
 help: ## Show this help message
 	@echo "CodeQuery Core - Quick Start Guide"
@@ -118,3 +118,34 @@ integration-test: ## Run integration tests
 	docker exec codequery_core python core/tests/integration_test.py
 	@echo "Stopping Core service..."
 	docker stop codequery_core
+
+integration-test-gateway: ## Run integration tests including Gateway interaction
+	@echo "Running Gateway integration tests..."
+	@# Ensure cleanup of any existing containers
+	@docker stop codequery_core 2>/dev/null || true
+	@docker rm codequery_core 2>/dev/null || true
+	@# Kill any processes using our ports
+	@echo "Cleaning up ports..."
+	@for port in 5001 4040; do \
+		pid=$$(sudo ss -lptn "sport = :$$port" | grep LISTEN | sed -E 's/.*pid=([0-9]+).*/\1/'); \
+		if [ ! -z "$$pid" ]; then \
+			echo "Killing process $$pid using port $$port"; \
+			sudo kill -9 $$pid 2>/dev/null || true; \
+		fi \
+	done
+	@# Start Core service with proper error handling
+	@echo "Starting Core service..."
+	@docker run --rm -d -p 5001:5001 -p 4040:4040 --name codequery_core -v "$(shell pwd):/app" --env-file .env codequery_core || \
+		(echo "Failed to start Core service" && exit 1)
+	@echo "Waiting for Core service to start..."
+	@sleep 5
+	@echo "Running Gateway integration test..."
+	@docker exec codequery_core python core/tests/integration_test_with_gateway.py || \
+		(docker stop codequery_core && echo "Integration test failed" && exit 1)
+	@echo "Stopping Core service..."
+	@docker stop codequery_core || true
+
+test-coverage: ## Run tests locally (outside Docker) with coverage report
+	@echo "$(GREEN)Running tests with coverage...$(NC)"
+	python -m pytest core/tests/ --cov=core/src --cov-report=term-missing:skip-covered -v
+	@echo "$(GREEN)Coverage report generated. Only showing files with missing coverage.$(NC)"

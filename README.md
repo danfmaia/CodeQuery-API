@@ -94,14 +94,22 @@ The CodeQuery API consists of two components:
 
 4. **Use the API**:
 
+   First, source the environment variables:
+
+   ```bash
+   source .env
+   ```
+
+   Then use the API:
+
    ```bash
    # Get the project structure
-   curl -H "X-API-KEY: API_KEY" https://codequery.dev/files/structure
+   curl -H "X-API-KEY: $API_KEY" https://codequery.dev/files/structure
 
    # Get specific file contents
    curl -X POST \
      -H "Content-Type: application/json" \
-     -H "X-API-KEY: API_KEY" \
+     -H "X-API-KEY: $API_KEY" \
      -d '{"file_paths": ["README.md"]}' \
      https://codequery.dev/files/content
    ```
