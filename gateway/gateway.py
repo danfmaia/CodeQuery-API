@@ -382,6 +382,9 @@ class GatewayAPI:
                         detail="Failed to store API key. Please try again later."
                     )
 
+                # Initialize an empty entry in ngrok_urls.json for this API key
+                self.s3_manager.update_ngrok_url(new_api_key, None)
+
                 # Update the in-memory cache
                 self.api_keys[new_api_key] = f"User{len(self.api_keys) + 1}"
 

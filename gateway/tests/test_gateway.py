@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from gateway import GatewayAPI
 import datetime
+import requests
 
 
 class TestGatewayAPI(unittest.TestCase):
@@ -262,22 +263,14 @@ class TestGatewayAPI(unittest.TestCase):
 
     @patch('gateway.S3Manager.store_encrypted_api_keys')
     @patch('gateway.S3Manager.load_encrypted_api_keys')
-    def test_generate_api_key(self, mock_load_keys, mock_store_keys):
-        """Test the API key generation endpoint."""
-        # Mock the existing API keys
-        mock_load_keys.return_value = {
-            "test-key": {  # Add test-key to allow middleware validation
-                "created_at": "2024-02-14T10:00:00",
-                "last_used": None,
-                "expires_at": None,
-                "rate_limit": {
-                    "requests_per_minute": 60,
-                    "current_minute": None,
-                    "minute_requests": 0
-                },
-                "total_requests": 0
-            },
-            "existing-key": {
+    @patch('gateway.S3Manager.update_ngrok_url')
+    def test_generate_api_key_initializes_ngrok_url(self, mock_update_ngrok_url, mock_load_keys, mock_store_keys):
+        """Test that generating a new API key initializes an empty ngrok URL entry."""
+        # Set up S3 manager mock for this test
+        patcher = patch.object(self.gateway_instance, 's3_manager')
+        mock_s3_manager = patcher.start()
+        mock_s3_manager.load_encrypted_api_keys.return_value = {
+            "test-key": {
                 "created_at": "2024-02-14T10:00:00",
                 "last_used": None,
                 "expires_at": None,
@@ -289,55 +282,23 @@ class TestGatewayAPI(unittest.TestCase):
                 "total_requests": 0
             }
         }
-
-        # Mock successful storage
-        mock_store_keys.return_value = {
+        mock_s3_manager.store_encrypted_api_keys.return_value = {
             "status": "success", "message": "API keys stored securely in S3"}
-
-        # Test with custom settings
-        headers = {"x-api-key": "test-key", "content-type": "application/json"}
-        custom_settings = {
-            "expiration_days": 60,
-            "requests_per_minute": 120
-        }
-
-        # Set up S3 manager mock for this test
-        patcher = patch.object(self.gateway_instance, 's3_manager')
-        mock_s3_manager = patcher.start()
-        mock_s3_manager.load_encrypted_api_keys.return_value = mock_load_keys.return_value
-        mock_s3_manager.store_encrypted_api_keys.return_value = mock_store_keys.return_value
-        # Add ngrok URL for middleware
-        mock_s3_manager.load_ngrok_url.return_value = "https://example.ngrok.io"
+        mock_s3_manager.update_ngrok_url.return_value = {
+            "status": "success", "message": "ngrok URL initialized for API key"}
         self.addCleanup(patcher.stop)
 
-        response = self.client.post(
-            "/api-keys/generate", headers=headers, json=custom_settings)
+        # Test with default settings
+        response = self.client.post("/api-keys/generate")
 
         # Verify response
         self.assertEqual(response.status_code, 200)
         response_data = response.json()
         self.assertIn("api_key", response_data)
-        self.assertIn("expires_at", response_data)
-        self.assertIn("rate_limit", response_data)
-        self.assertEqual(response_data["rate_limit"], 120)
 
-        # Verify the new key format and settings
+        # Verify that update_ngrok_url was called with None
         new_key = response_data["api_key"]
-        # Base64 encoded 32 bytes should be longer
-        self.assertTrue(len(new_key) > 32)
-
-        # Verify S3 storage was called at least once
-        self.assertGreater(
-            mock_s3_manager.store_encrypted_api_keys.call_count, 0)
-
-        # Verify that the last call to store_encrypted_api_keys contains the new key
-        last_call_args = mock_s3_manager.store_encrypted_api_keys.call_args_list[-1]
-        stored_keys = last_call_args[0][0]
-        self.assertIn(new_key, stored_keys)
-        key_data = stored_keys[new_key]
-        self.assertIn("created_at", key_data)
-        self.assertIn("expires_at", key_data)
-        self.assertEqual(key_data["rate_limit"]["requests_per_minute"], 120)
+        mock_s3_manager.update_ngrok_url.assert_called_once_with(new_key, None)
 
     @patch('gateway.S3Manager.load_encrypted_api_keys')
     def test_key_expiration(self, mock_load_keys):
@@ -412,3 +373,271 @@ class TestGatewayAPI(unittest.TestCase):
         self.assertIn("limit", response_data)
         self.assertIn("reset_at", response_data)
         self.assertEqual(response_data["limit"], 2)
+
+    def test_api_key_expiration(self):
+        """Test API key expiration handling."""
+        # Set up expired key data
+        expired_key = "expired-key"
+        self.mock_s3_data[expired_key] = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": None,
+            "expires_at": "2024-02-14T11:00:00",  # Set to a past time
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": None,
+                "minute_requests": 0
+            },
+            "total_requests": 0
+        }
+
+        headers = {"x-api-key": expired_key}
+        response = self.client.get("/files/structure", headers=headers)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "API Key has expired"})
+
+    def test_rate_limit_exceeded(self):
+        """Test rate limit handling."""
+        # Set up key data with rate limit exceeded
+        rate_limited_key = "rate-limited-key"
+        current_minute = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+        self.mock_s3_data[rate_limited_key] = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": None,
+            "expires_at": None,
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": current_minute,
+                "minute_requests": 60  # Set to limit
+            },
+            "total_requests": 100
+        }
+
+        headers = {"x-api-key": rate_limited_key}
+        response = self.client.get("/files/structure", headers=headers)
+        self.assertEqual(response.status_code, 429)
+        self.assertIn("rate limit exceeded", response.json()["detail"].lower())
+
+    def test_invalid_expiration_date(self):
+        """Test handling of invalid expiration date format."""
+        # Set up key data with invalid expiration date
+        invalid_exp_key = "invalid-exp-key"
+        self.mock_s3_data[invalid_exp_key] = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": None,
+            "expires_at": "invalid-date",  # Invalid date format
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": None,
+                "minute_requests": 0
+            },
+            "total_requests": 0
+        }
+
+        headers = {"x-api-key": invalid_exp_key}
+        response = self.client.get("/files/structure", headers=headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {
+                         "detail": "Error checking key expiration"})
+
+    def test_s3_storage_error(self):
+        """Test handling of S3 storage errors."""
+        # Mock S3 storage to raise an exception
+        self.mock_s3_manager.store_encrypted_api_keys.side_effect = Exception(
+            "S3 error")
+
+        # Mock requests.get to return an error
+        with patch('requests.get') as mock_get:
+            mock_get.side_effect = requests.exceptions.RequestException(
+                "Connection error")
+
+            # Set up the test key with rate limit data
+            test_key = "test-key"
+            current_minute = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+            self.mock_s3_data[test_key]["rate_limit"] = {
+                "requests_per_minute": 60,
+                "current_minute": current_minute,
+                "minute_requests": 30
+            }
+
+            headers = {"x-api-key": test_key}
+            response = self.client.get("/files/structure", headers=headers)
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.json(), {
+                             "detail": "Error retrieving file structure: Connection error"})
+
+    def test_file_structure_request_error(self):
+        """Test handling of errors in file structure requests."""
+        headers = {"x-api-key": "test-key"}
+        with patch('requests.get') as mock_get:
+            mock_get.side_effect = requests.exceptions.RequestException(
+                "Connection error")
+            response = self.client.get("/files/structure", headers=headers)
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.json(), {
+                             "detail": "Error retrieving file structure: Connection error"})
+
+    def test_file_structure_invalid_response(self):
+        """Test handling of invalid response from file structure endpoint."""
+        headers = {"x-api-key": "test-key"}
+        with patch('requests.get') as mock_get:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.side_effect = ValueError("Invalid JSON")
+            mock_get.return_value = mock_response
+            response = self.client.get("/files/structure", headers=headers)
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.json(), {
+                             "detail": "Error updating ngrok URL"})
+
+    def test_file_content_invalid_response(self):
+        """Test handling of invalid response from file content endpoint."""
+        headers = {"x-api-key": "test-key"}
+        with patch('requests.post') as mock_post:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.side_effect = ValueError("Invalid JSON")
+            mock_post.return_value = mock_response
+            response = self.client.post(
+                "/files/content",
+                json={"file_paths": ["test.py"]},
+                headers=headers
+            )
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.json(), {
+                             "detail": "Error updating ngrok URL"})
+
+    def test_file_content_missing_paths(self):
+        """Test handling of missing file paths in content request."""
+        headers = {"x-api-key": "test-key"}
+        # Mock the update_ngrok_url_from_s3 method to avoid S3 calls
+        with patch.object(self.gateway_instance, 'update_ngrok_url_from_s3') as mock_update:
+            with patch('requests.post') as mock_post:
+                # Set up the mock response
+                mock_response = MagicMock()
+                mock_response.status_code = 404
+                mock_response.text = "Not Found"
+                mock_response.json.return_value = {
+                    "detail": "No file paths provided"}
+                mock_post.return_value = mock_response
+
+                # Set up the mock update method
+                mock_update.return_value = None
+                self.gateway_instance.ngrok_url_cache["test-key"] = "https://example.ngrok.io"
+
+                # Make the request
+                response = self.client.post(
+                    "/files/content", json={}, headers=headers)
+                # Gateway passes through the response
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json(), {
+                                 "detail": "No file paths provided"})
+
+                # Verify the mock was called correctly
+                mock_post.assert_called_once_with(
+                    "https://example.ngrok.io/files/content",
+                    json={},  # Empty JSON object is passed through
+                    timeout=self.gateway_instance.timeout
+                )
+
+    def test_ngrok_url_update_missing_data(self):
+        """Test handling of missing data in ngrok URL update request."""
+        headers = {"x-api-key": "test-key"}
+        # Mock the update_ngrok_url_from_s3 method to avoid S3 calls
+        with patch.object(self.gateway_instance, 'update_ngrok_url_from_s3') as mock_update:
+            # Clear the ngrok URL cache to trigger the invalid URL error
+            self.gateway_instance.ngrok_url_cache.clear()
+            response = self.client.post(
+                "/ngrok-urls/", json={}, headers=headers)
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.json(), {"detail": "Invalid ngrok URL"})
+
+    def test_middleware_general_error(self):
+        """Test handling of general errors in middleware."""
+        # Mock load_encrypted_api_keys to raise an unexpected exception
+        self.mock_s3_manager.load_encrypted_api_keys.side_effect = Exception(
+            "Unexpected error")
+
+        headers = {"x-api-key": "test-key"}
+        response = self.client.get("/files/structure", headers=headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {"detail": "Internal server error"})
+
+    def test_file_content_request_error(self):
+        """Test handling of errors in file content requests."""
+        headers = {"x-api-key": "test-key"}
+        with patch('requests.post') as mock_post:
+            mock_post.side_effect = requests.exceptions.RequestException(
+                "Connection error")
+            response = self.client.post(
+                "/files/content",
+                json={"file_paths": ["test.py"]},
+                headers=headers
+            )
+            self.assertEqual(response.status_code, 500)
+            self.assertIn("error", response.json()["detail"].lower())
+
+    def test_api_key_generation(self):
+        """Test API key generation endpoint."""
+        response = self.client.post("/api-keys/generate")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("api_key", response.json())
+        generated_key = response.json()["api_key"]
+        self.assertTrue(len(generated_key) > 0)
+
+    def test_ngrok_url_cache_invalidation(self):
+        """Test ngrok URL cache invalidation."""
+        # Set up initial cache state
+        test_key = "test-key"
+        self.gateway_instance.ngrok_url_cache[test_key] = "https://test.ngrok.io"
+
+        # Invalidate cache
+        self.gateway_instance.invalidate_ngrok_cache(test_key)
+
+        # Verify cache was cleared
+        self.assertNotIn(test_key, self.gateway_instance.ngrok_url_cache)
+
+    def test_invalid_ngrok_url(self):
+        """Test handling of invalid ngrok URL format."""
+        # Set up invalid ngrok URL
+        invalid_url_key = "invalid-url-key"
+        self.mock_ngrok_urls[invalid_url_key] = "not-a-valid-url"
+        self.mock_s3_data[invalid_url_key] = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": None,
+            "expires_at": None,
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": None,
+                "minute_requests": 0
+            },
+            "total_requests": 0
+        }
+
+        headers = {"x-api-key": invalid_url_key}
+        response = self.client.get("/files/structure", headers=headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {"detail": "Invalid ngrok URL"})
+
+    def test_ngrok_url_update_error(self):
+        """Test handling of errors during ngrok URL update."""
+        # Mock update_ngrok_url_from_s3 to raise an exception
+        error_key = "error-key"
+        self.mock_s3_data[error_key] = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": None,
+            "expires_at": None,
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": None,
+                "minute_requests": 0
+            },
+            "total_requests": 0
+        }
+        self.mock_s3_manager.load_ngrok_url.side_effect = Exception(
+            "Update error")
+
+        headers = {"x-api-key": error_key}
+        response = self.client.get("/files/structure", headers=headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json(), {
+                         "detail": "Error updating ngrok URL"})

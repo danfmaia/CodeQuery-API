@@ -115,14 +115,18 @@ class S3Manager:
     def load_ngrok_url(self, api_key):
         """
         Load the ngrok URL for a given API key from the S3 bucket.
+        The data is automatically decrypted by S3 when using server-side encryption with KMS.
         """
         try:
             response = self.s3_client.get_object(
                 Bucket=self.bucket_name, Key=self.object_key)
             raw_data = response['Body'].read().decode('utf-8')
-            # Debug statement to verify raw data
-            print(f"DEBUG: Raw S3 Response: {raw_data}")
             ngrok_data = json.loads(raw_data)
+
+            # Log the number of ngrok URLs without exposing sensitive data
+            self.logger.debug(
+                "Retrieved %d ngrok URL mappings from S3", len(ngrok_data))
+
             return ngrok_data.get(api_key)
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
@@ -132,6 +136,7 @@ class S3Manager:
     def update_ngrok_url(self, api_key, new_ngrok_url):
         """
         Update or add a new ngrok URL for a given API key in the S3 bucket.
+        If new_ngrok_url is None, initializes an empty entry for the API key.
         """
         try:
             response = self.s3_client.get_object(
@@ -144,13 +149,21 @@ class S3Manager:
                 raise e
 
         # Update or insert the new URL
-        ngrok_data[api_key] = new_ngrok_url
+        if new_ngrok_url is None:
+            # Only add the key if it doesn't exist yet
+            if api_key not in ngrok_data:
+                ngrok_data[api_key] = None
+        else:
+            ngrok_data[api_key] = new_ngrok_url
 
-        # Put the updated object back to S3
+        # Put the updated object back to S3 with server-side encryption
         self.s3_client.put_object(
             Bucket=self.bucket_name,
             Key=self.object_key,
             Body=json.dumps(ngrok_data),
+            ServerSideEncryption='aws:kms',
+            SSEKMSKeyId=os.getenv('KMS_KEY_ID'),
             ContentType='application/json'
         )
-        return {"status": "success", "message": f"ngrok URL updated for API key {api_key}"}
+
+        return {"status": "success", "message": f"ngrok URL {'initialized' if new_ngrok_url is None else 'updated'} for API key {api_key}"}
