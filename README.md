@@ -18,7 +18,7 @@
 
 ## Introduction
 
-**CodeQuery™ API** is a lightweight Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code effectively. With this API, [LLM agents](https://python.langchain.com/v0.1/docs/modules/agents/) can query project structures and retrieve file contents, helping developers explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are accessed, making it an invaluable tool for AI-driven code analysis and development.
+**CodeQuery API** is a lightweight Python/Flask tool designed to enable AI assistants—such as custom GPTs—to navigate and interact with local code effectively. With this API, [LLM agents](https://python.langchain.com/v0.1/docs/modules/agents/) can query project structures and retrieve file contents, helping developers explore and manage large codebases. By adhering to customizable ignore patterns, the API ensures that only relevant files are accessed, making it an invaluable tool for AI-driven code analysis and development.
 
 🤖 **Curious Fact**: During its development, the **CodeQuery API** was an integral part of its own creation process, being used to analyze, write, and debug its own files while the project evolved. This unique feedback loop made it a participant in its own development stages! For more details on how the CodeQuery API has been applied, see the [Cases](#cases) section.
 
