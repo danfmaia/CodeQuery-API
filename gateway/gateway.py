@@ -436,9 +436,6 @@ class GatewayAPI:
             Users can purge their own keys, while admin can purge any key.
             """
             try:
-                # URL decode the API key
-                api_key = unquote_plus(api_key)
-
                 # Get the request API key
                 request_api_key = request.headers.get("x-api-key")
                 if not request_api_key:

@@ -150,8 +150,7 @@ When you no longer need an API key, you can purge it from the server. This will:
 To purge your API key:
 
 ```bash
-# Replace 'your-api-key' with your actual API key
-curl -X DELETE -H "X-API-KEY: your-api-key" https://codequery.dev/api-keys/your-api-key
+source .env && curl -X DELETE -H "X-API-KEY: $API_KEY" https://codequery.dev/api-keys/your-api-key
 ```
 
 Note:
