@@ -86,8 +86,8 @@ class GatewayAPI:
             """
             Middleware to validate API keys and dynamically set the ngrok URL for each request.
             """
-            # Skip authentication for root and API key generation endpoints
-            if request.url.path == "/" or request.url.path == "/api-keys/generate":
+            # Skip authentication for root, API key generation, and purge endpoints
+            if request.url.path == "/" or request.url.path == "/api-keys/generate" or request.url.path.startswith("/api-keys/") and request.method == "DELETE":
                 return await call_next(request)
 
             api_key = request.headers.get("x-api-key")
@@ -95,20 +95,14 @@ class GatewayAPI:
                 return JSONResponse(status_code=401, content={"detail": "Missing API Key"})
 
             try:
-                # First check in-memory keys for faster validation
-                if api_key not in self.api_keys:
-                    # If not in memory, try loading from S3
-                    api_keys = self.s3_manager.load_encrypted_api_keys() or {}
-                    if api_key not in api_keys:
-                        return JSONResponse(status_code=401, content={"detail": "Invalid API Key"})
-
-                    # Add to in-memory cache if found in S3
-                    self.api_keys[api_key] = f"User{len(self.api_keys) + 1}"
-
-                # Load the latest key data from S3 for expiration and rate limit checks
+                # First check in S3 for faster validation
                 api_keys = self.s3_manager.load_encrypted_api_keys() or {}
                 if api_key not in api_keys:
                     return JSONResponse(status_code=401, content={"detail": "Invalid API Key"})
+
+                # Update in-memory cache if needed
+                if api_key not in self.api_keys:
+                    self.api_keys[api_key] = f"User{len(self.api_keys) + 1}"
 
                 key_data = api_keys[api_key]
                 current_time = datetime.datetime.utcnow()
@@ -433,6 +427,100 @@ class GatewayAPI:
                     status_code=500,
                     detail="Failed to generate API key. Please try again later."
                 )
+
+        @self.app.delete("/api-keys/{api_key}")
+        async def purge_api_key(api_key: str, request: Request):
+            """
+            Purge all data associated with a specific API key.
+            This includes removing the key from api_keys.json and ngrok_urls.json.
+            Users can purge their own keys, while admin can purge any key.
+            """
+            try:
+                # URL decode the API key
+                api_key = unquote_plus(api_key)
+
+                # Get the request API key
+                request_api_key = request.headers.get("x-api-key")
+                if not request_api_key:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Missing API Key"
+                    )
+
+                # Get the admin key from environment variables
+                admin_key = os.getenv("ADMIN_API_KEY")
+
+                # Load current API keys
+                api_keys = self.s3_manager.load_encrypted_api_keys() or {}
+
+                # Check if the key exists
+                if api_key not in api_keys:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"API key {api_key} not found"
+                    )
+
+                # Check authorization:
+                # 1. Admin can purge any key except admin key
+                # 2. Users can only purge their own key
+                if request_api_key != admin_key and request_api_key != api_key:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Unauthorized. You can only purge your own API key."
+                    )
+
+                # Check if trying to delete admin key
+                if api_key == admin_key:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Cannot purge admin API key"
+                    )
+
+                # Store key data for audit log
+                purged_key_data = api_keys[api_key]
+
+                # Remove the key from api_keys.json
+                del api_keys[api_key]
+                self.s3_manager.store_encrypted_api_keys(api_keys)
+
+                # Remove the key from ngrok_urls.json
+                try:
+                    self.s3_manager.update_ngrok_url(api_key, None)
+                except Exception as e:
+                    self.logger.error(
+                        f"Error removing ngrok URL for {api_key}: {str(e)}")
+                    # Continue with the purge even if ngrok URL removal fails
+
+                # Invalidate the in-memory cache
+                self.invalidate_ngrok_cache(api_key)
+
+                # Log the purge operation for audit trail
+                self.logger.info(
+                    "API key purged: %s, Created: %s, Last Used: %s, Total Requests: %d",
+                    api_key,
+                    purged_key_data.get("created_at"),
+                    purged_key_data.get("last_used"),
+                    purged_key_data.get("total_requests", 0)
+                )
+
+                return {
+                    "status": "success",
+                    "message": f"API key {api_key} purged successfully",
+                    "purged_data": {
+                        "created_at": purged_key_data.get("created_at"),
+                        "last_used": purged_key_data.get("last_used"),
+                        "total_requests": purged_key_data.get("total_requests", 0)
+                    }
+                }
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                self.logger.error(f"Error purging API key: {str(e)}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to purge API key: {str(e)}"
+                ) from e
 
 
 # Create an instance of the GatewayAPI class

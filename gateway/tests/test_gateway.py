@@ -642,3 +642,165 @@ class TestGatewayAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json(), {
                          "detail": "Error updating ngrok URL"})
+
+    @patch.dict('os.environ', {'ADMIN_API_KEY': 'admin-key'})
+    def test_purge_api_key(self):
+        """Test API key purge endpoint."""
+        # Set up test data
+        test_key = "test-key-to-purge"
+        test_key_data = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": "2024-02-14T11:00:00",
+            "expires_at": None,
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": None,
+                "minute_requests": 0
+            },
+            "total_requests": 10
+        }
+
+        # Set up S3 manager mock
+        patcher = patch.object(self.gateway_instance, 's3_manager')
+        mock_s3_manager = patcher.start()
+        mock_s3_manager.load_encrypted_api_keys.return_value = {
+            test_key: test_key_data,
+            "admin-key": {
+                "created_at": "2024-02-14T10:00:00",
+                "last_used": None,
+                "expires_at": None,
+                "rate_limit": {
+                    "requests_per_minute": 60,
+                    "current_minute": None,
+                    "minute_requests": 0
+                },
+                "total_requests": 0
+            }
+        }
+        self.addCleanup(patcher.stop)
+
+        # Test successful self-purge by user
+        headers = {"x-api-key": test_key}
+        response = self.client.delete(f"/api-keys/{test_key}", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
+        self.assertEqual(response_data["status"], "success")
+        self.assertEqual(response_data["purged_data"]["total_requests"], 10)
+
+        # Verify S3 manager calls for self-purge
+        mock_s3_manager.store_encrypted_api_keys.assert_called()
+        mock_s3_manager.update_ngrok_url.assert_called_with(test_key, None)
+
+        # Reset call counts and mock data
+        mock_s3_manager.store_encrypted_api_keys.reset_mock()
+        mock_s3_manager.update_ngrok_url.reset_mock()
+        mock_s3_manager.load_encrypted_api_keys.return_value = {
+            test_key: test_key_data,
+            "admin-key": {
+                "created_at": "2024-02-14T10:00:00",
+                "last_used": None,
+                "expires_at": None,
+                "rate_limit": {
+                    "requests_per_minute": 60,
+                    "current_minute": None,
+                    "minute_requests": 0
+                },
+                "total_requests": 0
+            }
+        }
+
+        # Test successful purge by admin
+        headers = {"x-api-key": "admin-key"}
+        response = self.client.delete(f"/api-keys/{test_key}", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
+        self.assertEqual(response_data["status"], "success")
+        self.assertEqual(response_data["purged_data"]["total_requests"], 10)
+
+        # Verify S3 manager calls
+        mock_s3_manager.store_encrypted_api_keys.assert_called()
+        mock_s3_manager.update_ngrok_url.assert_called_with(test_key, None)
+
+    @patch.dict('os.environ', {'ADMIN_API_KEY': 'admin-key'})
+    def test_purge_api_key_unauthorized(self):
+        """Test API key purge endpoint with unauthorized access."""
+        # Set up test data
+        test_key = "test-key-to-purge"
+        other_key = "other-key"
+        test_key_data = {
+            "created_at": "2024-02-14T10:00:00",
+            "last_used": None,
+            "expires_at": None,
+            "rate_limit": {
+                "requests_per_minute": 60,
+                "current_minute": None,
+                "minute_requests": 0
+            },
+            "total_requests": 0
+        }
+
+        # Set up S3 manager mock
+        patcher = patch.object(self.gateway_instance, 's3_manager')
+        mock_s3_manager = patcher.start()
+        mock_s3_manager.load_encrypted_api_keys.return_value = {
+            test_key: test_key_data,
+            other_key: test_key_data
+        }
+        self.addCleanup(patcher.stop)
+
+        # Test with another user's key (not admin, not self)
+        headers = {"x-api-key": other_key}
+        response = self.client.delete(f"/api-keys/{test_key}", headers=headers)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.json()["detail"], "Unauthorized. You can only purge your own API key.")
+
+        # Test without API key
+        response = self.client.delete(f"/api-keys/{test_key}")
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["detail"], "Missing API Key")
+
+    @patch.dict('os.environ', {'ADMIN_API_KEY': 'admin-key'})
+    def test_purge_admin_key(self):
+        """Test attempt to purge admin API key."""
+        # Set up S3 manager mock
+        patcher = patch.object(self.gateway_instance, 's3_manager')
+        mock_s3_manager = patcher.start()
+        mock_s3_manager.load_encrypted_api_keys.return_value = {
+            "admin-key": {
+                "created_at": "2024-02-14T10:00:00",
+                "last_used": None,
+                "expires_at": None,
+                "rate_limit": {
+                    "requests_per_minute": 60,
+                    "current_minute": None,
+                    "minute_requests": 0
+                },
+                "total_requests": 0
+            }
+        }
+        self.addCleanup(patcher.stop)
+
+        # Test attempt to purge admin key
+        headers = {"x-api-key": "admin-key"}
+        response = self.client.delete("/api-keys/admin-key", headers=headers)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json()["detail"], "Cannot purge admin API key")
+
+    @patch.dict('os.environ', {'ADMIN_API_KEY': 'admin-key'})
+    def test_purge_nonexistent_key(self):
+        """Test attempt to purge a non-existent API key."""
+        # Set up S3 manager mock
+        patcher = patch.object(self.gateway_instance, 's3_manager')
+        mock_s3_manager = patcher.start()
+        mock_s3_manager.load_encrypted_api_keys.return_value = {}
+        self.addCleanup(patcher.stop)
+
+        # Test purge of non-existent key
+        headers = {"x-api-key": "admin-key"}
+        response = self.client.delete(
+            "/api-keys/nonexistent-key", headers=headers)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.json()["detail"], "API key nonexistent-key not found")

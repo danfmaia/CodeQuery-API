@@ -122,6 +122,44 @@ The CodeQuery API consists of two components:
    make logs   # View container logs
    ```
 
+### API Key Management
+
+The Gateway service provides functionality to manage your API keys. Here's how to perform common operations:
+
+#### Generating a New API Key
+
+```bash
+# Generate a key with default settings (30-day expiration, 60 requests/minute)
+curl -X POST https://codequery.dev/api-keys/generate
+
+# Generate a key with custom settings
+curl -X POST -H "Content-Type: application/json" -d '{
+  "expiration_days": 90,
+  "requests_per_minute": 100
+}' https://codequery.dev/api-keys/generate
+```
+
+#### Purging Your API Key
+
+When you no longer need an API key, you can purge it from the server. This will:
+
+- Delete the API key from the system
+- Remove all associated data
+- Invalidate any active ngrok tunnels for this key
+
+To purge your API key:
+
+```bash
+# Replace 'your-api-key' with your actual API key
+curl -X DELETE -H "X-API-KEY: your-api-key" https://codequery.dev/api-keys/your-api-key
+```
+
+Note:
+
+- You can only purge your own API key
+- Once purged, a key cannot be recovered
+- Make sure to generate a new key before purging if you plan to continue using the service
+
 ### Environment Variables
 
 The `.env` file created by `make init` contains all necessary configuration. The main variables you'll need to set are:
@@ -168,7 +206,7 @@ For more detailed information about the API endpoints and advanced usage, see th
   3. **Domain Setup**: Consider using a custom domain for access.
   4. **SSL/TLS Configuration**: Use services like Let's Encrypt to secure the server.
 
-## API Endpoints
+## Main API Endpoints
 
 ### 1. **Retrieve Project Structure**
 
